@@ -1,6 +1,6 @@
 package com.caresync.ai.service.Impl;
 
-import model.entity.AiAssistScheme;
+import com.caresync.ai.model.entity.AiAssistScheme;
 import com.caresync.ai.mapper.AiAssistSchemeMapper;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

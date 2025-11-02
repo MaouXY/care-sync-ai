@@ -1,0 +1,509 @@
+# 留守儿童 AI 情感陪伴与帮扶项目 - 后端设计方案（修订版）
+
+基于 “数字人 Sessions 由 live talking 服务生成，仅需维护‘数字人实例画面传输 + 文本指令分发’关联” 的核心需求，删除独立数字人会话表，将会话关联逻辑融入现有表结构，同时保留原有轻量化、闭环优先的设计原则，修订数据库、架构及接口设计如下：
+
+## 一、数据库设计修订（PostgreSQL 15.x）
+
+### 1. 核心设计原则调整
+
+- 移除独立`digital_person_session`表，将 livetalking 生成的数字人 Session ID 作为 “关联标识” 嵌入现有业务表，避免数据冗余；
+- 数字人 Sessions 仅维护 “画面传输实例 + 文本指令分发” 核心关联，不存储额外会话状态（如终端类型、闲置时间），状态管理交由 livetalking 服务负责；
+- 保留原有`JSONB`扩展字段、时间戳追溯、标签化设计等原则，确保后期功能迭代灵活性。
+
+### 2. 修订后表结构详情（含完整建表 SQL）
+
+#### （1）儿童信息表（`child`）- 无变更
+
+维持原有结构，聚焦儿童基础信息与 AI 结构化数据存储，无需新增数字人相关字段（数字人 Session 与儿童的关联通过聊天记录间接绑定）：
+
+```sql
+CREATE TABLE child (
+    id BIGSERIAL PRIMARY KEY, -- 儿童唯一ID（自增）
+    child_no VARCHAR(20) NOT NULL UNIQUE, -- 儿童登录ID（社工预先创建）
+    name VARCHAR(50) NOT NULL, -- 儿童姓名
+    age INT NOT NULL CHECK (age > 0), -- 儿童年龄
+    verify_code VARCHAR(4) NOT NULL, -- 4位登录验证码（BCrypt加密存储）
+    has_new_chat BOOLEAN DEFAULT FALSE, -- 是否有新聊天记录（社工端列表标注）
+    ai_struct_info JSONB, -- AI结构化信息：情感趋势、核心需求等（示例见下文）
+    ai_analysis_time TIMESTAMP, -- 最后一次AI分析时间（避免重复分析）
+    interest_tags JSONB, -- 预留：兴趣标签（如["童话","绘画"]）
+    study_situation JSONB, -- 预留：学习情况（如{"math":"良好"}）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- 索引：优化登录查询与新消息筛选
+CREATE INDEX idx_child_child_no ON child(child_no);
+CREATE INDEX idx_child_has_new_chat ON child(has_new_chat);
+-- TODO GIN检索ai_struct_info
+
+-- ai_struct_info扩展结构示例
+-- {
+--   "emotion_trend": ["孤独", "平静", "开心"],
+--   "core_needs": ["故事陪伴", "学习辅导"],
+--   "potential_problems": ["沟通较少"],
+--   "latest_analysis": "2025-10-31 15:30:00"
+-- }
+```
+
+#### （2）AI 聊天记录表（`ai_chat_record`）- 新增数字人 Session 关联字段
+
+嵌入 live talking 生成的`digi_session_id`，直接关联 “儿童聊天内容→数字人实例”，支撑 “文本指令分发 + 画面传输” 匹配：
+
+```sql
+CREATE TABLE ai_chat_record (
+    id BIGSERIAL PRIMARY KEY,
+    child_id BIGINT NOT NULL, -- 关联儿童ID
+    session_id VARCHAR(50) NOT NULL, -- 业务会话ID（儿童与AI的聊天会话）
+    digi_session_id VARCHAR(50) NOT NULL, -- 👉 livetalking生成的数字人Session ID（关联实例），为null则为AI文本对话，非数字人视频对话！
+    round_num INT NOT NULL, -- 会话内轮次（1、2、3...）
+    content_type VARCHAR(10) NOT NULL CHECK (content_type IN ('VOICE', 'TEXT')), -- 内容类型
+    content TEXT NOT NULL, -- 聊天内容（语音转文字后/文本直接存储）
+    is_ai_reply BOOLEAN NOT NULL, -- 是否AI回复（TRUE=AI，FALSE=儿童）
+    is_filtered BOOLEAN DEFAULT FALSE, -- 内容过滤状态
+    emotion_tag VARCHAR(20), -- 单轮情感标签（如“开心”“低落”）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 外键：删除儿童时同步删除聊天记录
+    FOREIGN KEY (child_id) REFERENCES child(id) ON DELETE CASCADE
+);
+-- 索引优化：按数字人Session查询关联聊天、按业务会话查询完整对话
+CREATE INDEX idx_chat_digi_session ON ai_chat_record(digi_session_id); -- 👉 新增数字人Session索引
+CREATE INDEX idx_chat_session ON ai_chat_record(session_id);
+CREATE INDEX idx_chat_child_time ON ai_chat_record(child_id, create_time);
+```
+
+**核心作用**：通过`digi_session_id`将儿童的每轮聊天内容与 livetalking 的数字人实例绑定，后端接收儿童消息后，携带该 ID 调用 livetalking 接口，确保文本指令分发到正确实例，同时获取对应实例的画面流。
+
+#### （3）AI 帮扶方案表（`ai_assist_scheme`）- 无变更
+
+维持 “AI 建议 + 社工决策” 协作结构，数字人相关帮扶措施（如 “AI 故事推送”）通过`measures`数组存储，无需关联数字人 Session（推送时临时调用 live talking 生成 Session 即可）：
+
+```sql
+CREATE TABLE ai_assist_scheme (
+    id BIGSERIAL PRIMARY KEY, -- 方案ID
+    child_id BIGINT NOT NULL, -- 关联儿童ID
+    worker_id BIGINT NOT NULL, -- 关联社工ID
+    target VARCHAR(200) NOT NULL, -- 帮扶目标（如“缓解孤独感”）
+    measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
+    cycle INT DEFAULT 7, -- 周期（默认1周）
+    scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
+    ai_suggestions JSONB NOT NULL, -- AI原始建议（含目标、措施、依据）
+    worker_adjust_reason TEXT, -- 社工调整理由
+    ai_analysis_id BIGINT, -- 关联AI分析记录ID
+    evaluation_index JSONB, -- 预留：评估指标
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 外键关联
+    FOREIGN KEY (child_id) REFERENCES child(id) ON DELETE CASCADE,
+    FOREIGN KEY (worker_id) REFERENCES social_worker(id) ON DELETE CASCADE,
+    FOREIGN KEY (ai_analysis_id) REFERENCES ai_analysis_log(id) ON DELETE SET NULL
+);
+-- 索引：优化方案查询与状态筛选
+CREATE INDEX idx_scheme_child_worker ON ai_assist_scheme(child_id, worker_id);
+CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
+
+-- ai_suggestions示例（含数字人相关建议）
+-- {
+--   "target_suggest": ["缓解孤独感"],
+--   "measures_suggest": ["每周3次AI故事推送（数字人播报，偏好童话类）"],
+--   "basis": "近5次对话中，儿童3次提到“想听故事”"
+-- }
+```
+
+#### （4）帮扶跟踪日志表（`assist_track_log`）
+
+存储社工的帮扶进度记录，支撑 “闭环亮点”
+
+```sql
+CREATE TABLE assist_track_log (
+    id BIGSERIAL PRIMARY KEY, -- 日志ID
+    scheme_id BIGINT NOT NULL, -- 关联帮扶方案ID
+    worker_id BIGINT NOT NULL, -- 关联社工ID（记录人）
+    week INT NOT NULL, -- 帮扶周次（如“第1周”“第2周”）
+    completion_status VARCHAR(20) NOT NULL, -- 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
+    record_content TEXT NOT NULL, -- 记录内容（如“已完成1次电话沟通”）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 外键关联：删除方案时同步删除日志
+    FOREIGN KEY (scheme_id) REFERENCES ai_assist_scheme(id) ON DELETE CASCADE,
+    FOREIGN KEY (worker_id) REFERENCES social_worker(id) ON DELETE CASCADE
+);
+-- 索引：优化社工查询方案进度、周次筛选
+CREATE INDEX idx_track_scheme_id ON assist_track_log(scheme_id);
+CREATE INDEX idx_track_week ON assist_track_log(week);
+```
+
+#### （5）AI 分析记录表（`ai_analysis_log`）
+
+ 跟踪结构化信息来源
+
+记录每次 AI 分析的触发时机、依据对话范围及结果，便于社工追溯：
+
+```sql
+CREATE TABLE ai_analysis_log (
+    id BIGSERIAL PRIMARY KEY,
+    child_id BIGINT NOT NULL,
+    session_ids TEXT[], -- 本次分析涉及的会话ID列表（如{"session1","session2"}）
+    analysis_result JSONB NOT NULL, -- 完整分析结果（与child.ai_struct_info关联）
+    trigger_type VARCHAR(20) NOT NULL, -- 触发方式：AUTO（定时）/MANUAL（社工手动触发）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (child_id) REFERENCES child(id) ON DELETE CASCADE
+);
+-- 索引：按儿童查询分析历史
+CREATE INDEX idx_analysis_child ON ai_analysis_log(child_id);
+```
+
+#### （6）社工信息表（`social_worker`）
+
+存储社工账号信息及权限相关数据
+
+```sql
+CREATE TABLE social_worker (
+    id BIGSERIAL PRIMARY KEY, -- 社工唯一ID
+    worker_no VARCHAR(20) NOT NULL UNIQUE, -- 社工账号
+    password VARCHAR(100) NOT NULL, -- 密码（BCrypt加密存储）
+    name VARCHAR(50) NOT NULL, -- 社工姓名
+    phone VARCHAR(20) NOT NULL, -- 社工联系电话（用于儿童端紧急呼叫）
+    role VARCHAR(20) DEFAULT 'NORMAL', -- 角色：NORMAL（普通社工）/ADMIN（管理员，预留）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- 索引：优化社工登录查询
+CREATE INDEX idx_social_worker_worker_no ON social_worker(worker_no);
+```
+
+## 二、后端架构设计修订（SpringBoot 3.x）
+
+### 1. 整体架构分层调整
+
+移除原有`digital_person_session`相关的实体、服务与 DAO，新增`LivetalkingClient`工具类，聚焦 “数字人 Session 关联 + 接口调用”，架构分层更轻量化：
+
+```plaintext
+com.child.ai
+├── config/          # 配置层：新增livetalking服务配置
+├── controller/      # 控制层：调整儿童端聊天接口，新增数字人Session参数
+├── service/         # 服务层：AiChatService集成livetalking调用逻辑
+│   ├── impl/
+├── mapper/          # 数据访问层：调整AI聊天记录Mapper，新增digi_session_id字段映射
+├── model/           # 模型层：AI聊天记录实体新增digi_session_id字段
+│   ├── entity/
+│   ├── dto/         # 新增数字人Session相关DTO（如DigiSessionBindDTO）
+│   ├── vo/
+├── client/          # 👉 新增客户端层：封装livetalking服务调用
+│   ├── LivetalkingClient.java
+├── exception/       # 异常层：新增livetalking调用异常处理
+├── util/            # 工具层：无变更
+└── CareSyncAiApplication.java  # 启动类
+```
+
+### 2. 核心模块修订
+
+#### （1）配置层（config）- 新增 Livetalking 配置
+
+新增`LivetalkingConfig`，存储服务地址、API 密钥等信息，通过`@Bean`注入客户端实例：
+
+```java
+@Configuration
+public class LivetalkingConfig {
+    @Value("${livetalking.base-url}")
+    private String baseUrl;
+    @Value("${livetalking.api-key}")
+    private String apiKey;
+
+    @Bean
+    public LivetalkingClient livetalkingClient() {
+        return new LivetalkingClient(baseUrl, apiKey);
+    }
+}
+```
+
+**配置示例（application.yml）**：
+
+```yaml
+livetalking:
+  base-url: "https://livetalking-api.com/v1" # livetalking服务地址
+  api-key: "digi_ak_123456" # 接口调用密钥
+  session-expire: 3600 # 数字人Session有效期（秒，默认1小时）
+```
+
+#### （2）客户端层（client）- 封装 Livetalking 调用
+
+新增`LivetalkingClient`，封装 “创建数字人 Session”“发送文本指令”“获取画面流地址” 等核心接口，避免业务层直接依赖第三方服务细节：
+
+```java
+/**
+ * Livetalking服务客户端：处理数字人Session创建、指令分发、画面流获取
+ */
+@Component
+public class LivetalkingClient {
+    private final RestTemplate restTemplate;
+    private final String baseUrl;
+    private final String apiKey;
+
+    // 构造函数注入依赖
+    public LivetalkingClient(String baseUrl, String apiKey) {
+        this.baseUrl = baseUrl;
+        this.apiKey = apiKey;
+        this.restTemplate = new RestTemplate();
+    }
+
+    /**
+     * 1. 创建数字人Session（儿童发起聊天时调用）
+     * @param digiId 数字人ID（如"lively_001"）
+     * @return 数字人Session信息（含digiSessionId、streamUrl）
+     */
+    public DigiSessionVO createDigiSession(String digiId) {
+        String url = baseUrl + "/digi/session/create";
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-Key", apiKey);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        Map<String, String> request = new HashMap<>();
+        request.put("digiId", digiId);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(request, headers);
+
+        return restTemplate.postForObject(url, entity, DigiSessionVO.class);
+    }
+
+    /**
+     * 2. 发送文本指令到数字人实例（儿童发送消息时调用）
+     * @param digiSessionId livestalking生成的Session ID
+     * @param text 文本指令（如儿童消息转文字后内容）
+     * @return 数字人响应（含画面流更新标识、语音播报文本）
+     */
+    public DigiCommandResponse sendTextCommand(String digiSessionId, String text) {
+        String url = baseUrl + "/digi/session/" + digiSessionId + "/command";
+        // 类似创建Session的请求封装逻辑，省略...
+    }
+
+    /**
+     * 3. 关闭数字人Session（儿童结束聊天时调用）
+     * @param digiSessionId 数字人Session ID
+     * @return 关闭结果（success: true/false）
+     */
+    public boolean closeDigiSession(String digiSessionId) {
+        String url = baseUrl + "/digi/session/" + digiSessionId + "/close";
+        //  DELETE请求逻辑，省略...
+    }
+}
+```
+
+**核心 DTO/VO 定义**：
+
+- `DigiSessionVO`：存储创建 Session 后的返回结果（`digiSessionId`：数字人 Session ID；`streamUrl`：画面流地址）；
+- `DigiCommandResponse`：存储文本指令的响应（`streamUpdated`：画面流是否更新；`voiceText`：数字人播报的语音文本）。
+
+#### （3）服务层（service）- AiChatService 集成数字人逻辑
+
+修改`AiChatService`，在儿童聊天流程中集成 “创建数字人 Session→绑定会话→发送指令→存储记录” 的完整逻辑：
+
+```java
+@Service
+public class AiChatServiceImpl implements AiChatService {
+    @Autowired
+    private LivetalkingClient livetalkingClient;
+    @Autowired
+    private AiChatRecordMapper chatRecordMapper;
+    @Autowired
+    private AiAnalysisService aiAnalysisService;
+
+    /**
+     * 儿童发送聊天消息（含数字人Session关联）
+     */
+    @Override
+    public ChatResponseDTO sendChatMessage(ChatSendDTO dto) {
+        Long childId = dto.getChildId();
+        String content = dto.getContent();
+        String contentType = dto.getContentType();
+        String sessionId = dto.getSessionId(); // 业务会话ID（儿童与AI的聊天会话）
+
+        // 步骤1：若首次聊天（无digiSessionId），调用livetalking创建数字人Session
+        String digiSessionId = dto.getDigiSessionId();
+        if (StringUtils.isEmpty(digiSessionId)) {
+            DigiSessionVO digiSession = livetalkingClient.createDigiSession("lively_001"); // 默认使用活泼型数字人
+            digiSessionId = digiSession.getDigiSessionId();
+        }
+
+        // 步骤2：内容处理（语音转文字、文本过滤）
+        String processedContent = processContent(content, contentType); // 集成阿里云ASR与内容安全
+
+        // 步骤3：调用livetalking发送文本指令，获取数字人响应
+        DigiCommandResponse digiResp = livetalkingClient.sendTextCommand(digiSessionId, processedContent);
+
+        // 步骤4：调用AI模型生成回复文本
+        String aiReply = generateAiReply(processedContent, childId); // 对接外部AI模型（如Claude）
+
+        // 步骤5：查询当前会话的最大轮次，确定本轮轮次
+        Integer maxRound = chatRecordMapper.getMaxRoundBySessionId(sessionId);
+        int roundNum = maxRound == null ? 1 : maxRound + 1;
+
+        // 步骤6：存储聊天记录（含digiSessionId）
+        AiChatRecord record = new AiChatRecord();
+        record.setChildId(childId);
+        record.setSessionId(sessionId);
+        record.setDigiSessionId(digiSessionId); // 👉 绑定数字人Session
+        record.setRoundNum(roundNum);
+        record.setContentType(contentType);
+        record.setContent(processedContent);
+        record.setIsAiReply(false); // 儿童消息
+        record.setIsFiltered(true); // 已过滤
+        record.setEmotionTag(extractEmotionTag(processedContent)); // 提取情感标签
+        chatRecordMapper.insert(record);
+
+        // 步骤7：存储AI回复记录
+        AiChatRecord aiRecord = new AiChatRecord();
+        // 类似儿童记录的赋值，仅isAiReply设为true，content设为aiReply，省略...
+        chatRecordMapper.insert(aiRecord);
+
+        // 步骤8：每3轮对话触发一次AI分析，更新儿童结构化信息
+        if (roundNum % 3 == 0) {
+            aiAnalysisService.autoAnalyze(childId, Collections.singletonList(sessionId));
+        }
+
+        // 步骤9：返回结果（含数字人Session ID、AI回复、画面流地址）
+        return ChatResponseDTO.builder()
+                .aiReply(aiReply)
+                .digiSessionId(digiSessionId)
+                .streamUrl(digiResp.getStreamUrl()) // 数字人画面流地址
+                .roundNum(roundNum)
+                .build();
+    }
+
+    // 辅助方法：内容处理（语音转文字、过滤）、AI回复生成、情感标签提取，省略...
+}
+```
+
+#### （4）异常层（exception）- 新增 Livetalking 异常处理
+
+在`GlobalExceptionHandler`中新增`LivetalkingException`处理逻辑，返回统一错误格式，便于前端排查问题：
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    // 其他异常处理方法...
+
+    /**
+     * 处理livetalking服务调用异常（如Session创建失败、指令发送超时）
+     */
+    @ExceptionHandler(LivetalkingException.class)
+    public ResponseEntity<BaseResponse> handleLivetalkingException(LivetalkingException e) {
+        BaseResponse response = new BaseResponse();
+        response.setCode(503); // 服务不可用
+        response.setMsg("数字人服务异常：" + e.getMessage());
+        response.setData(null);
+        return new ResponseEntity<>(response, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+}
+
+// 自定义Livetalking异常
+public class LivetalkingException extends RuntimeException {
+    public LivetalkingException(String message) {
+        super(message);
+    }
+}
+```
+
+## 三、接口设计修订（RESTful 风格）
+
+### 1. 接口通用规范
+
+- 统一前缀：儿童端`/api/child`，社工端`/api/social-worker`；
+
+- 请求方式：`GET`（查询）、`POST`（创建 / 提交）、`PUT`（编辑）；
+
+- 响应格式：统一 JSON 结构，包含状态码、消息、数据：
+
+  ```json
+  {
+    "code": 200, // 200=成功，400=参数错误，401=未登录，500=服务器错误
+    "msg": "操作成功",
+    "data": {} // 业务数据（如登录令牌、儿童列表）
+  }
+  ```
+
+  
+
+- 认证方式：登录成功后返回 JWT 令牌，后续接口通过`Authorization`请求头携带（`Bearer {token}`）。
+
+### 2. 儿童端核心接口修订 - 聊天接口新增数字人 Session 参数
+
+调整`AI聊天接口`的入参，新增`digiSessionId`字段（首次聊天可空，后续需携带），出参新增`digiSessionId`与`streamUrl`（数字人画面流地址）：
+
+| 接口路径             | 请求方式 | 接口描述                       | 入参（DTO）新增 / 调整                                       | 出参（data）新增 / 调整                                      |
+| -------------------- | -------- | ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| `/api/child/ai/chat` | POST     | 儿童与 AI 聊天（含数字人交互） | 新增`digiSessionId`（String，可选）：livetalking 生成的数字人 Session ID | 新增`digiSessionId`（String）、`streamUrl`（String）：数字人画面流地址 |
+
+**入参示例（ChatSendDTO）**：
+
+```json
+{
+  "childId": 123,
+  "sessionId": "chat_123_1730000000", // 业务会话ID
+  "digiSessionId": "digi_123_789", // 首次聊天可空，后续需携带
+  "contentType": "TEXT",
+  "content": "我想听故事"
+}
+```
+
+**出参示例（ChatResponseDTO）**：
+
+```json
+{
+  "code": 200,
+  "msg": "操作成功",
+  "data": {
+    "aiReply": "好呀，给你讲个《小兔子找朋友》的故事...",
+    "digiSessionId": "digi_123_789",
+    "streamUrl": "wss://livetalking-stream.com/stream/digi_123_789", // 数字人画面流地址
+    "roundNum": 1,
+    "emotionTag": "期待"
+  }
+}
+```
+
+### 3. 新增儿童端数字人 Session 关闭接口
+
+用于儿童主动结束数字人交互时，通知 livetalking 关闭对应实例，避免资源浪费：
+
+| 接口路径                        | 请求方式 | 接口描述           | 入参（DTO）                     | 出参（data）                       |
+| ------------------------------- | -------- | ------------------ | ------------------------------- | ---------------------------------- |
+| `/api/child/digi/session/close` | POST     | 关闭数字人 Session | `digiSessionId`（String，必填） | `success`（boolean）：是否关闭成功 |
+
+### 4. 社工端核心接口
+
+社工端核心接口（儿童管理、方案生成、帮扶跟踪）维持原有逻辑，仅在 “方案生成” 的 AI 建议中可能包含数字人相关措施（如 “数字人故事推送”），无需新增数字人 Session 相关接口。
+
+#### （1）儿童管理模块
+
+| 接口路径                          | 请求方式 | 接口描述                         | 入参（DTO）                                                  | 出参（data）                                   |
+| --------------------------------- | -------- | -------------------------------- | ------------------------------------------------------------ | ---------------------------------------------- |
+| `/api/social-worker/child/list`   | GET      | 获取儿童列表（分页）             | `pageNum`（页码）、`pageSize`（每页条数）、`hasNewChat`（可选，筛选新消息） | 分页对象（`list`：儿童列表 VO、`total`：总数） |
+| `/api/social-worker/child/detail` | GET      | 获取儿童详情（含 AI 结构化信息） | `childId`                                                    | 儿童详情 VO（`name`/`age`/`aiStructInfo`等）   |
+
+#### （2）帮扶方案模块
+
+| 接口路径                             | 请求方式 | 接口描述             | 入参（DTO）                                      | 出参（data）                               |
+| ------------------------------------ | -------- | -------------------- | ------------------------------------------------ | ------------------------------------------ |
+| `/api/social-worker/scheme/generate` | POST     | 1 键生成 AI 帮扶方案 | `childId`、`workerId`                            | 帮扶方案 VO（`target`/`measures`/`cycle`） |
+| `/api/social-worker/scheme/edit`     | PUT      | 编辑帮扶方案         | `schemeId`、`target`（可选）、`measures`（可选） | 编辑后的方案 VO                            |
+| `/api/social-worker/scheme/export`   | GET      | 导出帮扶方案（PDF）  | `schemeId`                                       | `fileUrl`（PDF 下载链接）                  |
+
+#### （3）帮扶跟踪模块
+
+| 接口路径                                | 请求方式 | 接口描述                     | 入参（DTO）                                             | 出参（data）                                             |
+| --------------------------------------- | -------- | ---------------------------- | ------------------------------------------------------- | -------------------------------------------------------- |
+| `/api/social-worker/track/add-log`      | POST     | 添加帮扶日志                 | `schemeId`、`week`、`completionStatus`、`recordContent` | 日志 ID                                                  |
+| `/api/social-worker/track/get-progress` | GET      | 获取方案帮扶进度（各周状态） | `schemeId`                                              | 进度列表 VO（`week`/`completionStatus`/`recordContent`） |
+
+## 四、预留扩展设计修订
+
+1. **数字人实例扩展预留**：在`child`表的`ai_struct_info`中预留`digi_preference`字段（JSONB 类型），后期可存储儿童偏好的数字人 ID（如`{"preferred_digi_id":"warm_002"}`），创建 Session 时自动使用偏好实例；
+2. **livetalking 接口扩展预留**：在`LivetalkingClient`中预留 “数字人表情控制”“语音风格切换” 等方法（如`setDigiExpression(String digiSessionId, String expression)`），后期只需实现即可支持更多交互功能；
+3. **前端画面流适配预留**：聊天接口出参返回`streamUrl`（WebSocket 协议），前端可直接通过该地址拉取数字人画面，后期无需修改接口格式即可适配不同分辨率、帧率的画面流。
+
+## 五、修订亮点总结
+
+1. **轻量化设计**：移除独立数字人会话表，将 Session 关联逻辑嵌入现有`ai_chat_record`表，减少表结构冗余，符合 “快速交付” 需求；
+2. **职责清晰**：数字人 Session 的状态管理（如创建、过期、关闭）完全交由 livetalking 服务，后端仅负责 “关联标识存储 + 接口调用”，避免跨服务状态同步复杂度；
+3. **功能闭环**：儿童聊天流程中自动完成 “数字人 Session 创建→指令分发→画面流获取→记录存储”，同时保留 AI 分析、情感标签提取等核心能力，确保 “AI 陪伴 + 精准帮扶” 闭环完整；
+4. **扩展性强**：通过预留字段、客户端接口封装，后期可快速支持数字人偏好设置、表情控制等功能，无需重构现有架构。
+
+该修订方案完全适配 “数字人 Sessions 由 livetalking 生成，仅维护画面传输与文本指令关联” 的需求，同时保持原有方案的轻量化与闭环优势，可直接支撑项目初期核心功能落地。

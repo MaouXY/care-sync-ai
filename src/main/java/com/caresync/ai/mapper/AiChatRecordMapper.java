@@ -1,6 +1,6 @@
 package com.caresync.ai.mapper;
 
-import model.entity.AiChatRecord;
+import com.caresync.ai.model.entity.AiChatRecord;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

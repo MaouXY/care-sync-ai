@@ -1,4 +1,4 @@
-package model.entity;
+package com.caresync.ai.model.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -21,43 +21,40 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@TableName("ai_assist_scheme")
-public class AiAssistScheme extends Model<AiAssistScheme> {
+@TableName("child")
+public class Child extends Model<Child> {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("child_id")
-    private Long childId;
+    @TableField("child_no")
+    private String childNo;
 
-    @TableField("worker_id")
-    private Long workerId;
+    @TableField("name")
+    private String name;
 
-    @TableField("target")
-    private String target;
+    @TableField("age")
+    private Integer age;
 
-    @TableField("measures")
-    private Object measures;
+    @TableField("verify_code")
+    private String verifyCode;
 
-    @TableField("cycle")
-    private Integer cycle;
+    @TableField("has_new_chat")
+    private Boolean hasNewChat;
 
-    @TableField("scheme_status")
-    private String schemeStatus;
+    @TableField("ai_struct_info")
+    private Object aiStructInfo;
 
-    @TableField("ai_suggestions")
-    private Object aiSuggestions;
+    @TableField("ai_analysis_time")
+    private LocalDateTime aiAnalysisTime;
 
-    @TableField("worker_adjust_reason")
-    private String workerAdjustReason;
+    @TableField("interest_tags")
+    private Object interestTags;
 
-    @TableField("ai_analysis_id")
-    private Long aiAnalysisId;
-
-    @TableField("evaluation_index")
-    private Object evaluationIndex;
+    @TableField("study_situation")
+    private Object studySituation;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -1,6 +1,6 @@
 package com.caresync.ai.mapper;
 
-import model.entity.AiAssistScheme;
+import com.caresync.ai.model.entity.AiAssistScheme;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 

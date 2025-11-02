@@ -1,6 +1,6 @@
 package com.caresync.ai.service.Impl;
 
-import model.entity.AiAnalysisLog;
+import com.caresync.ai.model.entity.AiAnalysisLog;
 import com.caresync.ai.mapper.AiAnalysisLogMapper;
 import com.caresync.ai.service.IAiAnalysisLogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

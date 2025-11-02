@@ -1,4 +1,4 @@
-package model.entity;
+package com.caresync.ai.model.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -21,8 +21,8 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@TableName("ai_chat_record")
-public class AiChatRecord extends Model<AiChatRecord> {
+@TableName("ai_assist_scheme")
+public class AiAssistScheme extends Model<AiAssistScheme> {
 
     private static final long serialVersionUID = 1L;
 
@@ -32,29 +32,32 @@ public class AiChatRecord extends Model<AiChatRecord> {
     @TableField("child_id")
     private Long childId;
 
-    @TableField("session_id")
-    private String sessionId;
+    @TableField("worker_id")
+    private Long workerId;
 
-    @TableField("digi_session_id")
-    private String digiSessionId;
+    @TableField("target")
+    private String target;
 
-    @TableField("round_num")
-    private Integer roundNum;
+    @TableField("measures")
+    private Object measures;
 
-    @TableField("content_type")
-    private String contentType;
+    @TableField("cycle")
+    private Integer cycle;
 
-    @TableField("content")
-    private String content;
+    @TableField("scheme_status")
+    private String schemeStatus;
 
-    @TableField("is_ai_reply")
-    private Boolean aiReply;
+    @TableField("ai_suggestions")
+    private Object aiSuggestions;
 
-    @TableField("is_filtered")
-    private Boolean filtered;
+    @TableField("worker_adjust_reason")
+    private String workerAdjustReason;
 
-    @TableField("emotion_tag")
-    private String emotionTag;
+    @TableField("ai_analysis_id")
+    private Long aiAnalysisId;
+
+    @TableField("evaluation_index")
+    private Object evaluationIndex;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

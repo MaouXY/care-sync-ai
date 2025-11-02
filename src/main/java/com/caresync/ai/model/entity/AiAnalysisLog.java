@@ -1,4 +1,4 @@
-package model.entity;
+package com.caresync.ai.model.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -21,28 +21,25 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-@TableName("assist_track_log")
-public class AssistTrackLog extends Model<AssistTrackLog> {
+@TableName("ai_analysis_log")
+public class AiAnalysisLog extends Model<AiAnalysisLog> {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
-    @TableField("scheme_id")
-    private Long schemeId;
+    @TableField("child_id")
+    private Long childId;
 
-    @TableField("worker_id")
-    private Long workerId;
+    @TableField("session_ids")
+    private Object sessionIds;
 
-    @TableField("week")
-    private Integer week;
+    @TableField("analysis_result")
+    private Object analysisResult;
 
-    @TableField("completion_status")
-    private String completionStatus;
-
-    @TableField("record_content")
-    private String recordContent;
+    @TableField("trigger_type")
+    private String triggerType;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;

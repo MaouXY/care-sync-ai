@@ -1,6 +1,6 @@
 package com.caresync.ai.service.Impl;
 
-import model.entity.SocialWorker;
+import com.caresync.ai.model.entity.SocialWorker;
 import com.caresync.ai.mapper.SocialWorkerMapper;
 import com.caresync.ai.service.ISocialWorkerService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;

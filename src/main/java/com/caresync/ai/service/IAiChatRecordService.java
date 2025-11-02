@@ -1,6 +1,6 @@
 package com.caresync.ai.service;
 
-import model.entity.AiChatRecord;
+import com.caresync.ai.model.entity.AiChatRecord;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

@@ -1,6 +1,6 @@
 package com.caresync.ai.service;
 
-import model.entity.SocialWorker;
+import com.caresync.ai.model.entity.SocialWorker;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**

@@ -9,13 +9,6 @@ import com.baomidou.mybatisplus.generator.config.OutputFile;
 import com.baomidou.mybatisplus.generator.config.rules.DateType;
 import com.baomidou.mybatisplus.generator.engine.FreemarkerTemplateEngine;
 import com.baomidou.mybatisplus.generator.fill.Column;
-import com.baomidou.mybatisplus.generator.config.querys.PostgreSqlQuery;
-import com.baomidou.mybatisplus.generator.config.builder.GeneratorBuilder;
-import com.baomidou.mybatisplus.generator.config.rules.DbColumnType;
-import com.baomidou.mybatisplus.generator.config.rules.IColumnType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 
@@ -53,7 +46,7 @@ public class CodeGenerator {
                 .packageConfig(builder -> {
                     builder.parent(parentPackage) // 设置父包名
                             .entity(entityPackage) // 实体类包路径
-                            .mapper("mapper")
+                            .mapper("com/caresync/ai/mapper")
                             .service("service")
                             .serviceImpl("service.Impl")
                             .controller("controller")

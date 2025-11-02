@@ -1,6 +1,6 @@
 package com.caresync.ai.service.Impl;
 
-import model.entity.Child;
+import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.ChildMapper;
 import com.caresync.ai.service.IChildService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
