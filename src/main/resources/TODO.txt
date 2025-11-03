@@ -1,0 +1,56 @@
+# 儿童端 (ChildController) APP移动端
+    1. 登录 (POST /child/login) - 儿童ID+4位验证码登录
+    2. 获取儿童个人信息 (GET /child/info) - 获取基本信息
+    3. 发送聊天消息 (POST /child/chat/send) - 文字/语音输入
+    4. 获取聊天记录 (GET /child/chat/history) - 获取历史聊天
+    5. 紧急呼叫 (POST /child/emergency-call) - 触发紧急联系
+
+# 社工端 (SocialWorkerController) Web端
+    1. 登录 (POST /social-worker/login) - 已实现
+    2. 登出 (POST /social-worker/logout)
+    3. 获取个人信息 (GET /social-worker/info)
+    4. 更新个人信息 (PUT /social-worker/info)
+
+# 儿童管理模块 (ChildController)
+    1. 获取儿童列表 (GET /child/list) - 分页查询，显示ID、姓名、年龄，标注新聊天记录
+    2. 获取儿童详情 (GET /child/detail/{id}) - 显示AI提取的结构化信息
+    3. 创建儿童账号 (POST /child/create) - 社工预先创建儿童账号
+    4. 更新儿童信息 (PUT /child/update/{id})
+    5. 重置儿童验证码 (POST /child/reset-code/{id})
+
+# AI聊天记录模块 (AiChatRecordController)
+    1. 获取儿童聊天记录 (GET /chat-record/child/{childId}) - 供社工查看
+    2. 标记聊天记录已读 (PUT /chat-record/mark-read/{childId}) - 社工已查看新消息
+    3. 获取会话列表 (GET /chat-record/sessions/{childId}) - 获取会话列表
+
+# 帮扶方案模块 (AiAssistSchemeController)
+    1. AI生成帮扶方案 (POST /scheme/generate) - 一键生成AI帮扶方案
+    2. 获取方案列表 (GET /scheme/list) - 按儿童ID或状态查询
+    3. 获取方案详情 (GET /scheme/detail/{id})
+    4. 编辑方案 (PUT /scheme/update/{id}) - AI交互式修改
+    5. 方案导出 (GET /scheme/export/{id})
+    6. 修改方案状态 (PUT /scheme/status/{id}) - 切换方案状态
+
+# 帮扶跟踪模块 (AssistTrackLogController)
+    1. 添加帮扶日志 (POST /track-log/add) - 记录帮扶进展
+    2. 获取方案跟踪日志 (GET /track-log/scheme/{schemeId}) - 按方案查询日志
+    3. 更新帮扶日志 (PUT /track-log/update/{id})
+    4. 获取儿童帮扶进度 (GET /track-log/child/{childId}) - 进度可视化
+
+# AI分析模块 (AiAnalysisLogController)
+    1. 手动触发AI分析 (POST /ai-analysis/manual/{childId}) - 社工手动触发分析
+    2. 获取分析历史 (GET /ai-analysis/history/{childId})
+    3. 获取最新分析结果 (GET /ai-analysis/latest/{childId})
+
+# 日志模块 (LogController)
+    1. 获取系统日志 (GET /log/system) - 分页查询系统日志
+    2. 获取操作日志 (GET /log/operation) - 分页查询操作日志
+    3. 获取登录日志 (GET /log/login) - 分页查询登录日志
+
+# AI模拟训练模块 (AiSimulationController)
+    1. 获取模拟训练场景列表 (GET /simulation/scenarios) - 获取可用的训练场景列表
+    2. 开始新的训练会话 (POST /simulation/start) - 开始一个新的训练会话
+    3. 发送训练消息 (POST /simulation/send) - 社工向模拟儿童发送消息
+    4. 获取训练会话记录 (GET /simulation/history/{sessionId}) - 获取指定训练会话的聊天记录
+    5. 获取AI指导意见 (GET /simulation/advice/{sessionId}) - 获取AI对当前训练的指导意见
+    6. 结束训练会话 (POST /simulation/end/{sessionId}) - 结束训练会话并获取总结评估

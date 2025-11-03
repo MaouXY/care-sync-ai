@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童端产品原型 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10B981',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        aiMessage: '#EBF4FF',
+                        userMessage: '#E6FFFA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .message-bubble-left {
+                border-radius: 18px 18px 18px 4px;
+            }
+            .message-bubble-right {
+                border-radius: 18px 18px 4px 18px;
+            }
+            .phone-frame {
+                box-shadow: 0 0 0 16px #111, 0 0 0 18px #333, 0 10px 30px rgba(0,0,0,0.4);
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gray-900 text-white min-h-screen flex flex-col">
+<!-- 顶部导航 -->
+<header class="bg-gray-800 py-4 px-6 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <i class="fa fa-mobile text-3xl text-primary"></i>
+            <h1 class="text-xl font-bold">CareSync AI 儿童端原型</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="toggleTheme" class="p-2 rounded-full hover:bg-gray-700 transition-custom">
+                <i class="fa fa-moon-o text-xl"></i>
+            </button>
+            <button id="toggleFullscreen" class="p-2 rounded-full hover:bg-gray-700 transition-custom">
+                <i class="fa fa-expand text-xl"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<!-- 控制按钮区 -->
+<div class="container mx-auto px-6 py-4 flex flex-wrap gap-2 justify-center">
+    <button class="nav-btn px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg shadow transition-custom" data-target="login">
+        <i class="fa fa-sign-in mr-2"></i> 登录页面
+    </button>
+    <button class="nav-btn px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow transition-custom" data-target="home">
+        <i class="fa fa-home mr-2"></i> 聊天主页
+    </button>
+    <button class="nav-btn px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow transition-custom" data-target="digitalPerson">
+        <i class="fa fa-video-camera mr-2"></i> 数字人对话
+    </button>
+    <button class="nav-btn px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg shadow transition-custom" data-target="socialWorker">
+        <i class="fa fa-comments-o mr-2"></i> 社工留言
+    </button>
+    <div class="ml-auto flex items-center gap-4">
+        <label class="flex items-center space-x-2">
+            <input type="checkbox" id="showBrowserUI" class="form-checkbox rounded text-primary" checked>
+            <span>显示浏览器UI</span>
+        </label>
+    </div>
+</div>
+
+<!-- 主要内容区域 - 手机原型展示 -->
+<main class="container mx-auto flex-1 flex items-center justify-center p-4">
+    <!-- 竖向长方形框 - 模拟手机 -->
+    <div id="phonePrototype" class="phone-frame rounded-[50px] bg-gray-100 relative overflow-hidden w-[375px] h-[812px] flex flex-col">
+        <!-- 浏览器UI (可隐藏) -->
+        <div id="browserUI" class="bg-gray-800 text-white text-xs py-2 px-4 flex items-center space-x-2">
+            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <div class="flex-1 text-center">CareSync AI 儿童端</div>
+        </div>
+
+        <!-- 屏幕内容区域 -->
+        <div class="flex-1 overflow-hidden">
+            <!-- 登录页面 -->
+            <div id="loginScreen" class="h-full overflow-y-auto">
+                <!-- 顶部装饰 -->
+                <div class="flex justify-center mb-8 mt-10">
+                    <div class="w-24 h-24 bg-primary/20 rounded-full flex items-center justify-center">
+                        <i class="fa fa-child text-primary text-5xl"></i>
+                    </div>
+                </div>
+
+                <!-- 主标题 -->
+                <div class="text-center mb-10">
+                    <h1 class="text-3xl font-bold text-dark mb-2">欢迎来到</h1>
+                    <div class="flex items-center justify-center space-x-2">
+                        <i class="fa fa-heartbeat text-primary text-xl"></i>
+                        <h2 class="text-2xl font-bold text-primary">CareSync AI</h2>
+                    </div>
+                    <p class="text-neutral mt-2 text-lg">快乐成长的小伙伴</p>
+                </div>
+
+                <!-- 登录卡片 -->
+                <div class="bg-white rounded-2xl shadow-lg px-6 py-8 m-4">
+                    <!-- 登录表单 -->
+                    <form>
+                        <!-- 儿童账号输入 -->
+                        <div class="mb-6">
+                            <label for="childNo" class="block text-sm font-medium text-neutral mb-2">儿童账号</label>
+                            <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-neutral">
+                                        <i class="fa fa-user text-xl"></i>
+                                    </span>
+                                <input type="text" id="childNo"
+                                       class="w-full px-10 py-4 border border-gray-300 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom text-lg"
+                                       placeholder="请输入您的账号" value="child1234" readonly>
+                            </div>
+                        </div>
+
+                        <!-- 验证码输入 -->
+                        <div class="mb-8">
+                            <label for="verifyCode" class="block text-sm font-medium text-neutral mb-2">验证码</label>
+                            <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-neutral">
+                                        <i class="fa fa-shield text-xl"></i>
+                                    </span>
+                                <input type="text" id="verifyCode" maxlength="4"
+                                       class="w-full px-10 py-4 pr-36 border border-gray-300 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom text-lg"
+                                       placeholder="请输入4位验证码" value="5678" readonly>
+                                <button type="button"
+                                        class="absolute inset-y-0 right-0 pr-4 flex items-center text-primary hover:text-primary/80 transition-custom text-lg font-medium">
+                                    获取验证码
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 登录按钮 -->
+                        <button type="button" id="loginBtn"
+                                class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 px-4 rounded-xl shadow-lg transition-custom transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50 text-lg flex items-center justify-center">
+                            <i class="fa fa-sign-in mr-2"></i> 登录
+                        </button>
+                    </form>
+
+                    <!-- 帮助链接 -->
+                    <div class="mt-6 text-center">
+                        <p class="text-neutral text-sm">
+                            忘记账号？请联系您的社工老师
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 底部装饰 -->
+                <div class="mt-8 mb-6">
+                    <div class="flex justify-center space-x-1">
+                        <div class="w-2 h-2 rounded-full bg-primary"></div>
+                        <div class="w-2 h-2 rounded-full bg-primary/50"></div>
+                        <div class="w-2 h-2 rounded-full bg-primary/30"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 聊天主页 -->
+            <div id="homeScreen" class="h-full overflow-y-auto hidden">
+                <!-- 头部导航 -->
+                <header class="bg-white shadow-md py-3 px-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-primary font-bold text-xl flex items-center">
+                                <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                                <span>CareSync AI</span>
+                            </div>
+                            <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">儿童端</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="relative text-neutral hover:text-primary transition-custom">
+                                <i class="fa fa-bell text-xl"></i>
+                                <span class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full text-white text-[10px] flex items-center justify-center">3</span>
+                            </button>
+                            <div class="relative group">
+                                <button class="flex items-center space-x-2 focus:outline-none">
+                                    <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小明</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 主要内容区域 -->
+                <main class="px-4 py-6">
+                    <div class="grid grid-cols-1 gap-6">
+                        <!-- 左侧功能导航 -->
+                        <div class="bg-white rounded-xl shadow-md p-4">
+                            <div class="space-y-1">
+                                <a href="#chat" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium">
+                                    <i class="fa fa-comments text-lg"></i>
+                                    <span>AI 聊天</span>
+                                </a>
+                                <a href="#activities" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                                    <i class="fa fa-calendar-check-o text-lg"></i>
+                                    <span>我的活动</span>
+                                </a>
+                                <a href="#interests" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                                    <i class="fa fa-star text-lg"></i>
+                                    <span>兴趣爱好</span>
+                                </a>
+                                <a href="#growth" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                                    <i class="fa fa-line-chart text-lg"></i>
+                                    <span>成长记录</span>
+                                </a>
+                            </div>
+
+                            <!-- 社工留言按钮 -->
+                            <div class="mt-6">
+                                <button id="socialWorkerMsgBtn" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg shadow transition-custom flex items-center justify-center space-x-2">
+                                    <i class="fa fa-comments-o"></i>
+                                    <span>社工留言</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 聊天区域 -->
+                        <div id="chat" class="bg-white rounded-xl shadow-md overflow-hidden h-[450px] flex flex-col">
+                            <!-- 聊天头部 -->
+                            <div class="p-4 border-b border-gray-200">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white">
+                                        <i class="fa fa-robot text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-dark font-semibold">AI 陪伴助手</h2>
+                                        <p class="text-xs text-green-500 flex items-center"><i class="fa fa-circle mr-1"></i> 在线</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 聊天内容区域 -->
+                            <div class="flex-1 overflow-y-auto p-4 space-y-5" id="chatMessages">
+                                <!-- 欢迎消息 -->
+                                <div class="flex items-start space-x-4">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                        <i class="fa fa-robot"></i>
+                                    </div>
+                                    <div class="max-w-[80%]">
+                                        <div class="bg-aiMessage message-bubble-left p-4">
+                                            <p class="text-dark text-base">你好，小明！我是你的AI陪伴助手，今天过得怎么样？有什么想和我分享的吗？</p>
+                                        </div>
+                                        <p class="text-xs text-neutral mt-1">10:30</p>
+                                    </div>
+                                </div>
+
+                                <!-- 用户消息 -->
+                                <div class="flex items-start justify-end space-x-4">
+                                    <div class="max-w-[80%]">
+                                        <div class="bg-userMessage message-bubble-right p-4">
+                                            <p class="text-dark text-base">今天我数学考了95分，老师表扬我了！</p>
+                                        </div>
+                                        <p class="text-xs text-neutral mt-1 text-right">10:32</p>
+                                    </div>
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0 mt-1">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                </div>
+
+                                <!-- AI回复 -->
+                                <div class="flex items-start space-x-4">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                        <i class="fa fa-robot"></i>
+                                    </div>
+                                    <div class="max-w-[80%]">
+                                        <div class="bg-aiMessage message-bubble-left p-4">
+                                            <p class="text-dark text-base">太棒了！数学考95分真的很厉害，这说明你最近学习很努力呢！能告诉我你是怎么做到的吗？</p>
+                                        </div>
+                                        <p class="text-xs text-neutral mt-1">10:33</p>
+                                    </div>
+                                </div>
+
+                                <!-- 快捷回复建议 -->
+                                <div class="flex flex-wrap gap-2 ml-14">
+                                    <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">我周末想去公园玩</button>
+                                    <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">我想学画画</button>
+                                    <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">你能给我讲个故事吗？</button>
+                                </div>
+                            </div>
+
+                            <!-- 聊天输入区域 -->
+                            <div class="p-4 border-t border-gray-200">
+                                <div class="flex items-end space-x-2">
+                                    <div class="flex-1 relative">
+                                            <textarea id="messageInput" rows="1" placeholder="输入消息..."
+                                                      class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-custom"></textarea>
+                                        <div class="absolute right-2 bottom-2 flex items-center space-x-1 text-neutral">
+                                            <button class="text-neutral hover:text-primary transition-custom">
+                                                <i class="fa fa-smile-o"></i>
+                                            </button>
+                                            <button class="text-neutral hover:text-primary transition-custom">
+                                                <i class="fa fa-microphone"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button id="sendMessageBtn"
+                                            class="bg-primary hover:bg-primary/90 text-white p-3 rounded-lg shadow transition-custom transform hover:-translate-y-1 focus:outline-none">
+                                        <i class="fa fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- 数字人对话界面 -->
+            <div id="digitalPersonScreen" class="h-full overflow-y-auto hidden">
+                <!-- 头部导航 -->
+                <header class="bg-white shadow-md py-3 px-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-primary font-bold text-xl flex items-center">
+                                <i class="fa fa-video-camera mr-2 text-accent"></i>
+                                <span>数字人陪伴</span>
+                            </div>
+                            <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">儿童端</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="relative text-neutral hover:text-primary transition-custom">
+                                <i class="fa fa-bell text-xl"></i>
+                                <span class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full text-white text-[10px] flex items-center justify-center">3</span>
+                            </button>
+                            <div class="relative group">
+                                <button class="flex items-center space-x-2 focus:outline-none">
+                                    <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小明</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 数字人区域 -->
+                <main class="px-4 py-6">
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        <!-- 数字人视频区域 -->
+                        <div class="relative h-[300px] bg-gray-900">
+                            <!-- 模拟数字人画面 -->
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="w-40 h-40 bg-primary/20 rounded-full flex items-center justify-center">
+                                    <i class="fa fa-user-circle-o text-primary text-7xl"></i>
+                                </div>
+                                <div class="absolute bottom-4 left-0 right-0 text-center text-white">
+                                    <p class="text-lg font-medium">AI数字人陪伴中...</p>
+                                </div>
+                            </div>
+
+                            <!-- 数字人控制按钮 -->
+                            <div class="absolute bottom-4 right-4 flex space-x-2">
+                                <button class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-custom">
+                                    <i class="fa fa-microphone"></i>
+                                </button>
+                                <button class="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-custom">
+                                    <i class="fa fa-video-camera"></i>
+                                </button>
+                                <button id="endDigitalPersonCall" class="w-10 h-10 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-custom">
+                                    <i class="fa fa-phone"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 数字人对话内容 -->
+                        <div class="p-4 space-y-4">
+                            <h3 class="text-lg font-semibold text-dark">数字人小助手</h3>
+
+                            <!-- 数字人对话记录 -->
+                            <div id="digitalPersonMessages" class="space-y-4 max-h-[200px] overflow-y-auto">
+                                <!-- 数字人消息 -->
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                        <i class="fa fa-robot text-sm"></i>
+                                    </div>
+                                    <div class="max-w-[80%]">
+                                        <div class="bg-aiMessage message-bubble-left p-3">
+                                            <p class="text-dark">你好，小明！我是数字人小助手，很高兴见到你！</p>
+                                        </div>
+                                        <p class="text-xs text-neutral mt-1">10:30</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 数字人输入区域 -->
+                            <div class="flex items-end space-x-2">
+                                <div class="flex-1 relative">
+                                        <textarea id="digitalPersonInput" rows="1" placeholder="对数字人说话或输入文字..."
+                                                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-custom"></textarea>
+                                </div>
+                                <button id="sendDigitalPersonMessage"
+                                        class="bg-primary hover:bg-primary/90 text-white p-3 rounded-lg shadow transition-custom transform hover:-translate-y-1 focus:outline-none">
+                                    <i class="fa fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+            <!-- 社工留言界面 -->
+            <div id="socialWorkerScreen" class="h-full overflow-y-auto hidden">
+                <!-- 头部导航 -->
+                <header class="bg-white shadow-md py-3 px-4">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-primary font-bold text-xl flex items-center">
+                                <i class="fa fa-comments-o mr-2 text-accent"></i>
+                                <span>社工留言</span>
+                            </div>
+                            <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">儿童端</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="text-neutral hover:text-primary transition-custom" id="backToHomeFromSocialWorker">
+                                <i class="fa fa-arrow-left text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 社工留言列表 -->
+                <main class="px-4 py-6">
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="p-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-dark">社工老师留言</h3>
+                        </div>
+
+                        <div id="socialWorkerMessages" class="divide-y divide-gray-200">
+                            <!-- 社工留言1 -->
+                            <div class="p-4">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0">
+                                        <i class="fa fa-user-circle-o"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start">
+                                            <h4 class="font-medium text-dark">张老师</h4>
+                                            <span class="text-xs text-neutral">今天 09:30</span>
+                                        </div>
+                                        <p class="text-dark mt-2">小明，看到你最近的学习进步很大，老师很为你开心！下周二下午3点有课外兴趣班，记得准时参加哦。</p>
+                                        <div class="mt-3 flex justify-end">
+                                            <button class="reply-btn text-primary text-sm hover:text-primary/80 transition-custom">
+                                                回复
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 社工留言2 -->
+                            <div class="p-4">
+                                <div class="flex items-start space-x-3">
+                                    <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0">
+                                        <i class="fa fa-user-circle-o"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start">
+                                            <h4 class="font-medium text-dark">李老师</h4>
+                                            <span class="text-xs text-neutral">昨天 15:45</span>
+                                        </div>
+                                        <p class="text-dark mt-2">小明，上次你说想学习画画，我帮你找了一些绘画教程，明天带给你。</p>
+                                        <div class="mt-3 flex justify-end">
+                                            <button class="reply-btn text-primary text-sm hover:text-primary/80 transition-custom">
+                                                回复
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 回复输入区域 -->
+                        <div id="replyContainer" class="p-4 border-t border-gray-200 hidden">
+                            <h4 class="font-medium text-dark mb-3">回复张老师</h4>
+                            <div class="flex items-end space-x-2">
+                                <div class="flex-1 relative">
+                                        <textarea id="socialWorkerReplyInput" rows="3" placeholder="输入回复内容..."
+                                                  class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-custom"></textarea>
+                                </div>
+                                <button id="cancelReplyBtn"
+                                        class="p-3 border border-gray-300 text-neutral rounded-lg hover:bg-gray-50 transition-custom">
+                                    取消
+                                </button>
+                                <button id="sendReplyBtn"
+                                        class="bg-primary hover:bg-primary/90 text-white p-3 rounded-lg shadow transition-custom">
+                                    发送
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 页脚 -->
+<footer class="bg-gray-800 py-4 px-6 text-center text-gray-400 text-sm">
+    <p>CareSync AI 儿童情感陪伴与帮扶项目 © 2025</p>
+</footer>
+
+<script>
+    // 获取DOM元素
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const loginScreen = document.getElementById('loginScreen');
+    const homeScreen = document.getElementById('homeScreen');
+    const digitalPersonScreen = document.getElementById('digitalPersonScreen');
+    const socialWorkerScreen = document.getElementById('socialWorkerScreen');
+    const loginBtn = document.getElementById('loginBtn');
+    const toggleTheme = document.getElementById('toggleTheme');
+    const toggleFullscreen = document.getElementById('toggleFullscreen');
+    const showBrowserUI = document.getElementById('showBrowserUI');
+    const browserUI = document.getElementById('browserUI');
+    const messageInput = document.getElementById('messageInput');
+    const sendMessageBtn = document.getElementById('sendMessageBtn');
+    const suggestionBtns = document.querySelectorAll('.suggestion-btn');
+    const digitalPersonInput = document.getElementById('digitalPersonInput');
+    const sendDigitalPersonMessage = document.getElementById('sendDigitalPersonMessage');
+    const endDigitalPersonCall = document.getElementById('endDigitalPersonCall');
+    const backToHomeFromSocialWorker = document.getElementById('backToHomeFromSocialWorker');
+    const replyBtns = document.querySelectorAll('.reply-btn');
+    const replyContainer = document.getElementById('replyContainer');
+    const cancelReplyBtn = document.getElementById('cancelReplyBtn');
+    const sendReplyBtn = document.getElementById('sendReplyBtn');
+    const socialWorkerReplyInput = document.getElementById('socialWorkerReplyInput');
+    const socialWorkerMsgBtn = document.getElementById('socialWorkerMsgBtn');
+    let isDarkMode = true;
+
+    // 切换屏幕显示
+    function showScreen(screenId) {
+        // 隐藏所有屏幕
+        loginScreen.classList.add('hidden');
+        homeScreen.classList.add('hidden');
+        digitalPersonScreen.classList.add('hidden');
+        socialWorkerScreen.classList.add('hidden');
+
+        // 显示选中的屏幕
+        const screen = document.getElementById(screenId);
+        if (screen) {
+            screen.classList.remove('hidden');
+        }
+
+        // 更新导航按钮状态
+        navBtns.forEach(btn => {
+            const target = btn.getAttribute('data-target');
+            if (target + 'Screen' === screenId) {
+                btn.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                btn.classList.add('bg-primary', 'hover:bg-primary/90');
+            } else {
+                btn.classList.remove('bg-primary', 'hover:bg-primary/90');
+                btn.classList.add('bg-gray-700', 'hover:bg-gray-600');
+            }
+        });
+    }
+
+    // 导航按钮点击事件
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            const screenId = target + 'Screen';
+            showScreen(screenId);
+        });
+    });
+
+    // 登录按钮点击事件
+    loginBtn.addEventListener('click', function() {
+        showScreen('homeScreen');
+    });
+
+    // 聊天主页中的社工留言按钮点击事件
+    socialWorkerMsgBtn.addEventListener('click', function() {
+        showScreen('socialWorkerScreen');
+    });
+
+    // 结束数字人对话
+    endDigitalPersonCall.addEventListener('click', function() {
+        showScreen('homeScreen');
+    });
+
+    // 从社工留言返回主页
+    backToHomeFromSocialWorker.addEventListener('click', function() {
+        showScreen('homeScreen');
+    });
+
+    // 切换主题
+    toggleTheme.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (isDarkMode) {
+            document.body.classList.remove('bg-gray-900', 'text-white');
+            document.body.classList.add('bg-gray-100', 'text-gray-900');
+            icon.classList.remove('fa-moon-o');
+            icon.classList.add('fa-sun-o');
+        } else {
+            document.body.classList.remove('bg-gray-100', 'text-gray-900');
+            document.body.classList.add('bg-gray-900', 'text-white');
+            icon.classList.remove('fa-sun-o');
+            icon.classList.add('fa-moon-o');
+        }
+        isDarkMode = !isDarkMode;
+    });
+
+    // 切换全屏
+    toggleFullscreen.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                alert(`全屏切换错误: ${err.message}`);
+            });
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                icon.classList.remove('fa-compress');
+                icon.classList.add('fa-expand');
+            }
+        }
+    });
+
+    // 显示/隐藏浏览器UI
+    showBrowserUI.addEventListener('change', function() {
+        if (this.checked) {
+            browserUI.classList.remove('hidden');
+        } else {
+            browserUI.classList.add('hidden');
+        }
+    });
+
+    // 自动调整文本框高度
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if (this.scrollHeight > 100) {
+            this.style.height = '100px';
+            this.style.overflowY = 'auto';
+        }
+    });
+    digitalPersonInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if (this.scrollHeight > 100) {
+            this.style.height = '100px';
+            this.style.overflowY = 'auto';
+        }
+    });
+    socialWorkerReplyInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+        if (this.scrollHeight > 100) {
+            this.style.height = '100px';
+            this.style.overflowY = 'auto';
+        }
+    });
+
+    // 发送消息（提示）
+    sendMessageBtn.addEventListener('click', function() {
+        alert('聊天功能正在开发中，敬请期待！');
+        messageInput.value = '';
+        messageInput.style.height = 'auto';
+        messageInput.style.overflowY = 'hidden';
+    });
+    messageInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessageBtn.click();
+        }
+    });
+
+    // 快捷回复（提示）
+    suggestionBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            alert('快捷回复功能正在开发中，敬请期待！');
+        });
+    });
+
+    // 数字人消息发送（提示）
+    sendDigitalPersonMessage.addEventListener('click', function() {
+        alert('数字人对话功能正在开发中，敬请期待！');
+        digitalPersonInput.value = '';
+        digitalPersonInput.style.height = 'auto';
+        digitalPersonInput.style.overflowY = 'hidden';
+    });
+    digitalPersonInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendDigitalPersonMessage.click();
+        }
+    });
+
+    // 社工留言回复（提示）
+    replyBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            replyContainer.classList.remove('hidden');
+        });
+    });
+    cancelReplyBtn.addEventListener('click', function() {
+        replyContainer.classList.add('hidden');
+        socialWorkerReplyInput.value = '';
+    });
+    sendReplyBtn.addEventListener('click', function() {
+        alert('社工留言回复功能正在开发中，敬请期待！');
+        socialWorkerReplyInput.value = '';
+        replyContainer.classList.add('hidden');
+    });
+
+    // 页面加载时初始化显示登录页面
+    document.addEventListener('DOMContentLoaded', function() {
+        showScreen('loginScreen');
+        if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        if (digitalPersonMessages) digitalPersonMessages.scrollTop = digitalPersonMessages.scrollHeight;
+    });
+</script>
+</body>
+</html>

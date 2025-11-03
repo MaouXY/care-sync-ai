@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童详情 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    
+    <!-- 自定义配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#7C3AED',
+                        success: '#10B981',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
+                        info: '#3B82F6',
+                        dark: '#1F2937',
+                        light: '#F9FAFB',
+                        neutral: '#6B7280'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    },
+                    transitionProperty: {
+                        'custom': 'all 0.2s ease-in-out'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+            .btn-shadow {
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            }
+            .gradient-bg {
+                background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-dark">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="social-worker-home.html" class="flex-shrink-0 flex items-center">
+                        <div class="w-10 h-10 rounded-lg gradient-bg flex items-center justify-center">
+                            <i class="fa fa-heart text-white text-xl"></i>
+                        </div>
+                        <span class="ml-3 text-xl font-bold text-dark">CareSync AI</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                        <div class="ml-4 px-3 py-2 rounded-md text-sm font-medium text-neutral hover:bg-gray-100 transition-custom">
+                            <a href="social-worker-home.html">首页</a>
+                        </div>
+                        <div class="ml-4 px-3 py-2 rounded-md text-sm font-medium text-primary bg-primary/10">
+                            <a href="social-worker-children.html">儿童管理</a>
+                        </div>
+                        <div class="ml-4 px-3 py-2 rounded-md text-sm font-medium text-neutral hover:bg-gray-100 transition-custom">
+                            <a href="#">帮扶方案</a>
+                        </div>
+                        <div class="ml-4 px-3 py-2 rounded-md text-sm font-medium text-neutral hover:bg-gray-100 transition-custom">
+                            <a href="#">统计分析</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button class="p-2 rounded-full text-neutral hover:text-primary hover:bg-gray-100 transition-custom">
+                        <i class="fa fa-bell"></i>
+                    </button>
+                    <div class="ml-3 relative">
+                        <button class="flex items-center text-sm rounded-full hover:bg-gray-100 transition-custom">
+                            <img class="h-8 w-8 rounded-full object-cover" src="https://picsum.photos/200/200" alt="用户头像">
+                            <span class="ml-2 text-neutral hidden sm:inline">王社工</span>
+                            <i class="fa fa-chevron-down ml-1 text-xs text-neutral hidden sm:inline"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 页面标题和操作按钮 -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-dark">儿童详情</h1>
+                <p class="mt-1 text-neutral">查看和编辑儿童的详细信息</p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-3">
+                <button id="backToListBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                    <i class="fa fa-arrow-left mr-2"></i>返回列表
+                </button>
+                <button id="editBtn" class="px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow btn-shadow transition-custom">
+                    <i class="fa fa-pencil mr-2"></i>编辑信息
+                </button>
+            </div>
+        </div>
+
+        <!-- 儿童基本信息卡片 -->
+        <div class="bg-white rounded-xl shadow card-shadow p-6 mb-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center md:justify-between mb-6">
+                <div class="flex items-center">
+                    <img src="https://picsum.photos/300/300?random=1" alt="儿童照片" class="w-24 h-24 rounded-full object-cover border-4 border-primary/20">
+                    <div class="ml-6">
+                        <h2 class="text-2xl font-bold text-dark" id="childName">李小华</h2>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">男</span>
+                            <span class="px-3 py-1 bg-green-100 text-green-800 text-sm rounded-full">12岁</span>
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-sm rounded-full">中风险</span>
+                            <span class="px-3 py-1 bg-purple-100 text-purple-800 text-sm rounded-full">帮扶中</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 md:mt-0 text-right">
+                    <div class="text-sm text-neutral">最近更新时间</div>
+                    <div class="font-medium" id="lastUpdateTime">2023-06-15 14:30:25</div>
+                </div>
+            </div>
+
+            <!-- 基本信息表单 -->
+            <form id="childInfoForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="editChildName" value="李小华" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">性别 <span class="text-danger">*</span></label>
+                        <select id="editChildGender" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-gray-50 cursor-not-allowed">
+                            <option value="male" selected>男</option>
+                            <option value="female">女</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">出生日期 <span class="text-danger">*</span></label>
+                        <input type="date" id="editChildBirthDate" value="2011-03-22" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">身份证号 <span class="text-danger">*</span></label>
+                        <input type="text" id="editChildIdCard" value="430123201103221234" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">联系电话 <span class="text-danger">*</span></label>
+                        <input type="tel" id="editChildPhone" value="138****5678" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">风险等级 <span class="text-danger">*</span></label>
+                        <select id="editChildRiskLevel" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-gray-50 cursor-not-allowed">
+                            <option value="low">低风险</option>
+                            <option value="medium" selected>中风险</option>
+                            <option value="high">高风险</option>
+                            <option value="urgent">紧急</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">帮扶状态 <span class="text-danger">*</span></label>
+                        <select id="editChildSupportStatus" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-gray-50 cursor-not-allowed">
+                            <option value="pending">待帮扶</option>
+                            <option value="inProgress" selected>帮扶中</option>
+                            <option value="completed">已完成</option>
+                            <option value="paused">暂停帮扶</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">监护人姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="editChildGuardianName" value="李大明" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">监护人电话 <span class="text-danger">*</span></label>
+                        <input type="tel" id="editChildGuardianPhone" value="139****4321" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-neutral mb-1">家庭地址 <span class="text-danger">*</span></label>
+                        <input type="text" id="editChildAddress" value="湖南省长沙市宁乡市花明楼镇花明村12组" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom bg-gray-50 cursor-not-allowed">
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-neutral mb-1">备注</label>
+                        <textarea id="editChildNotes" rows="3" disabled
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none bg-gray-50 cursor-not-allowed">父母常年在广东务工，由爷爷奶奶照顾，性格内向，学习成绩中等。</textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- AI分析结果区域 -->
+        <div class="bg-white rounded-xl shadow card-shadow p-6 mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-dark">AI情感分析结果</h3>
+                <span class="px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">最近分析时间: 2023-06-15 14:30</span>
+            </div>
+
+            <!-- 情感趋势图 -->
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-medium text-dark">情感变化趋势</h4>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 text-sm border border-primary text-primary rounded-md hover:bg-primary/5 transition-custom active">最近7天</button>
+                        <button class="px-3 py-1 text-sm border border-gray-300 text-neutral rounded-md hover:bg-gray-50 transition-custom">最近30天</button>
+                        <button class="px-3 py-1 text-sm border border-gray-300 text-neutral rounded-md hover:bg-gray-50 transition-custom">最近90天</button>
+                    </div>
+                </div>
+                <div class="h-80">
+                    <canvas id="emotionTrendChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 情感指标评分卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-blue-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-blue-700">情绪稳定性</span>
+                        <span class="text-xl font-bold text-blue-800">75分</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-blue-600">情绪波动中等，需关注变化</p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-green-700">积极情绪指数</span>
+                        <span class="text-xl font-bold text-green-800">68分</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-green-600 h-2.5 rounded-full" style="width: 68%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-green-600">积极情绪一般，有提升空间</p>
+                </div>
+                <div class="bg-yellow-50 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-yellow-700">焦虑水平</span>
+                        <span class="text-xl font-bold text-yellow-800">52分</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-yellow-600 h-2.5 rounded-full" style="width: 52%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-yellow-600">存在一定焦虑情绪，需适当干预</p>
+                </div>
+            </div>
+
+            <!-- AI分析摘要 -->
+            <div class="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                <h4 class="text-md font-medium text-dark mb-3">分析摘要</h4>
+                <p class="text-sm text-neutral leading-relaxed">
+                    基于近期与李小华的AI对话分析，发现其情绪状态总体稳定但存在波动。主要表现为周末情绪相对积极（可能与家人团聚有关），而周中特别是周二、周三情绪较为低落。对话中多次提到"想爸爸妈妈"、"作业很难"等内容，显示出一定的思乡情绪和学习压力。建议社工在周中增加关注度，提供适当的心理支持和学习辅导。
+                </p>
+            </div>
+        </div>
+
+        <!-- 帮扶计划和记录 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- 当前帮扶计划 -->
+            <div class="bg-white rounded-xl shadow card-shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-dark">当前帮扶计划</h3>
+                    <span class="px-3 py-1 bg-success/10 text-success text-sm rounded-full">进行中</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <i class="fa fa-comments text-primary"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-medium text-dark">每周心理疏导</h4>
+                            <p class="text-sm text-neutral mt-1">每周三下午3点进行1对1心理疏导，帮助缓解学习压力和思乡情绪。</p>
+                            <div class="mt-2 text-xs text-neutral">
+                                <i class="fa fa-calendar-check-o mr-1"></i> 已完成: 4次 / 计划: 12次
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <i class="fa fa-book text-primary"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-medium text-dark">学习辅导</h4>
+                            <p class="text-sm text-neutral mt-1">每周一、五放学后进行数学和英语辅导，提高学习自信心。</p>
+                            <div class="mt-2 text-xs text-neutral">
+                                <i class="fa fa-calendar-check-o mr-1"></i> 已完成: 6次 / 计划: 24次
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <i class="fa fa-phone text-primary"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="font-medium text-dark">亲子远程连线</h4>
+                            <p class="text-sm text-neutral mt-1">每月安排1-2次与父母的视频通话，缓解思乡情绪。</p>
+                            <div class="mt-2 text-xs text-neutral">
+                                <i class="fa fa-calendar-check-o mr-1"></i> 已完成: 1次 / 计划: 4次
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最近互动记录 -->
+            <div class="bg-white rounded-xl shadow card-shadow p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-dark">最近互动记录</h3>
+                    <a href="#" class="text-primary text-sm hover:underline transition-custom">查看全部</a>
+                </div>
+                <div class="space-y-4 max-h-96 overflow-y-auto">
+                    <div class="p-4 border border-gray-200 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-custom">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-medium text-dark">心理疏导</h4>
+                            <span class="text-xs text-neutral">2023-06-14 16:30</span>
+                        </div>
+                        <p class="text-sm text-neutral mt-2">与小华进行了约45分钟的心理疏导，主要讨论了最近的学习压力和对父母的思念。小华表示最近数学学习有些困难，对即将到来的考试感到紧张。给予了积极的鼓励和学习方法建议。</p>
+                        <div class="mt-3 text-xs text-neutral flex items-center">
+                            <i class="fa fa-user-circle-o mr-1"></i> 记录人: 王社工
+                        </div>
+                    </div>
+                    <div class="p-4 border border-gray-200 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-custom">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-medium text-dark">数学辅导</h4>
+                            <span class="text-xs text-neutral">2023-06-13 17:00</span>
+                        </div>
+                        <p class="text-sm text-neutral mt-2">帮助小华复习了上周学习的小数除法内容，解答了作业中的疑难问题。小华对知识点的掌握有所进步，但还需要更多练习。布置了额外的练习题。</p>
+                        <div class="mt-3 text-xs text-neutral flex items-center">
+                            <i class="fa fa-user-circle-o mr-1"></i> 记录人: 张志愿者
+                        </div>
+                    </div>
+                    <div class="p-4 border border-gray-200 rounded-lg hover:border-primary/50 hover:bg-primary/5 transition-custom">
+                        <div class="flex justify-between items-start">
+                            <h4 class="font-medium text-dark">亲子视频通话</h4>
+                            <span class="text-xs text-neutral">2023-06-10 19:30</span>
+                        </div>
+                        <p class="text-sm text-neutral mt-2">协助小华与父母进行了视频通话，时长约30分钟。小华向父母展示了最近的绘画作品和考试成绩，父母对小华的进步表示肯定和鼓励。通话氛围温馨。</p>
+                        <div class="mt-3 text-xs text-neutral flex items-center">
+                            <i class="fa fa-user-circle-o mr-1"></i> 记录人: 王社工
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑模式下的操作按钮 -->
+        <div id="editActions" class="mt-8 flex justify-end space-x-4 hidden">
+            <button id="cancelEditBtn" class="px-6 py-2 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                取消
+            </button>
+            <button id="saveChangesBtn" class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow btn-shadow transition-custom">
+                保存修改
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // 获取DOM元素
+        const editBtn = document.getElementById('editBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        const backToListBtn = document.getElementById('backToListBtn');
+        const editActions = document.getElementById('editActions');
+        const childInfoForm = document.getElementById('childInfoForm');
+        
+        // 获取URL中的childId参数
+        function getChildId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('childId') || '1'; // 默认使用1
+        }
+        
+        // 初始化页面数据
+        function initPageData() {
+            const childId = getChildId();
+            // 这里可以添加从API获取数据的逻辑
+            console.log(`加载儿童ID: ${childId} 的数据`);
+            
+            // 模拟从API获取数据
+            // 实际项目中应该替换为真实的API调用
+            
+            // 初始化情感趋势图表
+            initEmotionTrendChart();
+            
+            // 检查是否需要自动进入编辑模式
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('edit') === 'true') {
+                enableEditMode();
+            }
+        }
+        
+        // 初始化情感趋势图表
+        function initEmotionTrendChart() {
+            const ctx = document.getElementById('emotionTrendChart').getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(79, 70, 229, 0.2)');
+            gradient.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
+            
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+                    datasets: [{
+                        label: '情绪指数',
+                        data: [65, 59, 72, 68, 75, 82, 78],
+                        borderColor: '#4F46E5',
+                        backgroundColor: gradient,
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#4F46E5',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 100,
+                            ticks: {
+                                stepSize: 10
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#1F2937',
+                            bodyColor: '#6B7280',
+                            borderColor: 'rgba(79, 70, 229, 0.2)',
+                            borderWidth: 1,
+                            padding: 12,
+                            boxPadding: 6,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return `情绪指数: ${context.parsed.y}分`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+        
+        // 切换到编辑模式
+        function enableEditMode() {
+            // 启用表单输入
+            const inputs = childInfoForm.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = false;
+                input.classList.remove('bg-gray-50', 'cursor-not-allowed');
+            });
+            
+            // 显示编辑操作按钮
+            editActions.classList.remove('hidden');
+            
+            // 更改编辑按钮状态
+            editBtn.disabled = true;
+            editBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+        
+        // 取消编辑模式
+        function disableEditMode() {
+            // 禁用表单输入
+            const inputs = childInfoForm.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                input.disabled = true;
+                input.classList.add('bg-gray-50', 'cursor-not-allowed');
+            });
+            
+            // 隐藏编辑操作按钮
+            editActions.classList.add('hidden');
+            
+            // 恢复编辑按钮状态
+            editBtn.disabled = false;
+            editBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // 这里可以添加恢复原始数据的逻辑
+        }
+        
+        // 保存修改
+        function saveChanges() {
+            // 收集表单数据
+            const formData = {
+                name: document.getElementById('editChildName').value,
+                gender: document.getElementById('editChildGender').value,
+                birthDate: document.getElementById('editChildBirthDate').value,
+                idCard: document.getElementById('editChildIdCard').value,
+                phone: document.getElementById('editChildPhone').value,
+                riskLevel: document.getElementById('editChildRiskLevel').value,
+                supportStatus: document.getElementById('editChildSupportStatus').value,
+                guardianName: document.getElementById('editChildGuardianName').value,
+                guardianPhone: document.getElementById('editChildGuardianPhone').value,
+                address: document.getElementById('editChildAddress').value,
+                notes: document.getElementById('editChildNotes').value
+            };
+            
+            // 模拟API请求保存数据
+            console.log('保存的儿童信息:', formData);
+            
+            // 显示成功提示
+            alert('儿童信息保存成功');
+            
+            // 更新页面上的显示
+            document.getElementById('childName').textContent = formData.name;
+            document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('zh-CN');
+            
+            // 退出编辑模式
+            disableEditMode();
+        }
+        
+        // 返回列表页面
+        function backToList() {
+            window.location.href = 'social-worker-children.html';
+        }
+        
+        // 添加事件监听器
+        editBtn.addEventListener('click', enableEditMode);
+        cancelEditBtn.addEventListener('click', disableEditMode);
+        saveChangesBtn.addEventListener('click', saveChanges);
+        backToListBtn.addEventListener('click', backToList);
+        
+        // 页面加载时初始化数据
+        document.addEventListener('DOMContentLoaded', initPageData);
+    </script>
+</body>
+</html>

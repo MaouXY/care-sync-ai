@@ -1,4 +1,5 @@
 -- PostgreSQL数据库初始化脚本
+-- 适用于care-sync-ai项目
 
 -- 1. 创建数据库
 CREATE DATABASE care_sync_db
@@ -86,7 +87,6 @@ CREATE TABLE ai_assist_scheme (
 -- 索引：优化方案查询与状态筛选
 CREATE INDEX idx_scheme_child_worker ON ai_assist_scheme(child_id, worker_id);
 CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
-
 -- ai_suggestions示例（含数字人相关建议）
 -- {
 --   "target_suggest": ["缓解孤独感"],

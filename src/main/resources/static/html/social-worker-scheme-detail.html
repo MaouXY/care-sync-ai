@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方案详情 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-dark">帮扶方案详情</h1>
+                    <p class="text-neutral mt-1">方案编号: <span id="schemeCode">SCH-20230710-001</span></p>
+                </div>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="backToListBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
+                        <i class="fa fa-arrow-left"></i>
+                        <span class="hidden sm:inline-block">返回列表</span>
+                    </button>
+                    <button id="exportSchemeBtn" class="flex items-center space-x-2 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg transition-custom">
+                        <i class="fa fa-download"></i>
+                        <span>导出方案</span>
+                    </button>
+                    <button id="editSchemeBtn" class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-pencil"></i>
+                        <span>编辑方案</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案基本信息卡片 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- 左侧：方案基本信息 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-file-text-o text-primary mr-2"></i>
+                    方案基本信息
+                </h2>
+                
+                <div id="schemeInfoView" class="space-y-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-dark" id="schemeName">小明情感陪伴与心理疏导方案</h3>
+                        <div class="flex space-x-2 mt-1">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                情感陪伴
+                            </span>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                进行中
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-neutral">创建日期</p>
+                            <p class="font-medium text-dark" id="createDate">2023-07-10</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-neutral">预计完成时间</p>
+                            <p class="font-medium text-dark" id="expectedEndDate">2023-08-10</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-neutral">方案周期</p>
+                            <p class="font-medium text-dark" id="schemeCycle">4周</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-neutral">负责人</p>
+                            <p class="font-medium text-dark">李社工</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 编辑模式表单 -->
+                <div id="schemeInfoEdit" class="space-y-4 hidden">
+                    <div>
+                        <label class="block text-sm font-medium text-neutral mb-1">方案名称 <span class="text-danger">*</span></label>
+                        <input type="text" id="editSchemeName" value="小明情感陪伴与心理疏导方案" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral mb-1">方案类型 <span class="text-danger">*</span></label>
+                            <select id="editSchemeType" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                                <option value="emotional" selected>情感陪伴</option>
+                                <option value="educational">教育支持</option>
+                                <option value="behavioral">行为引导</option>
+                                <option value="family">家庭沟通</option>
+                                <option value="comprehensive">综合帮扶</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-neutral mb-1">方案状态 <span class="text-danger">*</span></label>
+                            <select id="editSchemeStatus" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                                <option value="draft">草稿</option>
+                                <option value="pending">待审核</option>
+                                <option value="in-progress" selected>进行中</option>
+                                <option value="completed">已完成</option>
+                                <option value="rejected">已拒绝</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral mb-1">预计周期 <span class="text-danger">*</span></label>
+                            <select id="editSchemeDuration" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                                <option value="4" selected>4周</option>
+                                <option value="8">8周</option>
+                                <option value="12">12周</option>
+                                <option value="24">24周</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-neutral mb-1">预计完成时间 <span class="text-danger">*</span></label>
+                            <input type="date" id="editExpectedEndDate" value="2023-08-10" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：关联儿童信息 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-child text-accent mr-2"></i>
+                    关联儿童信息
+                </h2>
+                
+                <div id="childInfoSection" class="space-y-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-child text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-dark" id="childName">小明</h3>
+                            <p class="text-neutral">10岁 · 男</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-neutral">风险等级</p>
+                            <p class="font-medium text-dark">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    中风险
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-neutral">最近互动</p>
+                            <p class="font-medium text-dark">2023-07-15</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-light rounded-lg p-4">
+                        <h4 class="font-medium text-dark mb-2">AI情感分析</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div>
+                                <p class="text-sm text-neutral">孤独感</p>
+                                <p class="font-semibold text-warning">65</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-neutral">焦虑度</p>
+                                <p class="font-semibold text-danger">72</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-neutral">幸福感</p>
+                                <p class="font-semibold text-warning">58</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：方案进度 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-tasks text-secondary mr-2"></i>
+                    方案进度
+                </h2>
+                
+                <div id="progressSection" class="space-y-4">
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm font-medium text-neutral">总体进度</span>
+                            <span class="text-sm font-medium text-dark">50%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="bg-secondary h-2.5 rounded-full" style="width: 50%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <h4 class="font-medium text-dark">各周完成情况</h4>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 text-sm font-medium text-dark">第1周</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <div class="w-12 text-sm text-neutral text-right">已完成</div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 text-sm font-medium text-dark">第2周</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <div class="w-12 text-sm text-neutral text-right">已完成</div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 text-sm font-medium text-dark">第3周</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <div class="w-12 text-sm text-neutral text-right">未开始</div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-2">
+                            <div class="w-8 text-sm font-medium text-dark">第4周</div>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <div class="w-12 text-sm text-neutral text-right">未开始</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案详情内容 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- 左侧：方案目标 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-bullseye text-accent mr-2"></i>
+                    方案目标
+                </h2>
+                
+                <div id="schemeTargetView" class="space-y-3">
+                    <div class="bg-light p-3 rounded-lg">
+                        <p class="font-medium text-dark mb-1">情感陪伴目标</p>
+                        <p class="text-neutral text-sm">降低小明的孤独感和焦虑情绪，帮助建立积极乐观的心态。</p>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded-lg">
+                        <p class="font-medium text-dark mb-1">心理疏导目标</p>
+                        <p class="text-neutral text-sm">引导小明正确表达内心感受，增强情绪管理能力。</p>
+                    </div>
+                    
+                    <div class="bg-light p-3 rounded-lg">
+                        <p class="font-medium text-dark mb-1">社交能力目标</p>
+                        <p class="text-neutral text-sm">鼓励小明参与社交活动，提高与人沟通和相处的能力。</p>
+                    </div>
+                </div>
+                
+                <!-- 编辑模式 -->
+                <div id="schemeTargetEdit" class="space-y-3 hidden">
+                    <div class="mb-2">
+                        <label class="block text-sm font-medium text-neutral mb-1">目标描述</label>
+                        <textarea id="editSchemeTargets" rows="6" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none">降低小明的孤独感和焦虑情绪，帮助建立积极乐观的心态。
+引导小明正确表达内心感受，增强情绪管理能力。
+鼓励小明参与社交活动，提高与人沟通和相处的能力。</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 中间：帮扶措施 -->
+            <div class="bg-white rounded-xl shadow-md p-6 lg:col-span-2">
+                <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                    <i class="fa fa-list-ul text-primary mr-2"></i>
+                    帮扶措施
+                </h2>
+                
+                <div id="schemeMeasuresView" class="space-y-6">
+                    <!-- 第1周 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-dark mb-2">第1周：建立信任关系</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">初次见面，了解小明的兴趣爱好和日常生活情况。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">与小明约定每周固定的见面时间，增加安全感。</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 第2周 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-dark mb-2">第2周：情绪识别与表达</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">通过情绪卡片游戏，帮助小明识别不同的情绪。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">引导小明用绘画的方式表达自己的内心感受。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-check-circle text-secondary mt-1"></i>
+                                <span class="text-neutral">教授简单的情绪调节方法，如深呼吸、倾诉等。</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 第3周 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-dark mb-2">第3周：社交技能培养</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">组织小组活动，鼓励小明与其他小朋友互动。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">角色扮演练习，学习如何与他人友好沟通。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">分享正面社交经验，增强小明的自信心。</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 第4周 -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h3 class="font-semibold text-dark mb-2">第4周：总结与展望</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">回顾四周的变化，肯定小明的进步。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">共同制定后续计划，帮助小明保持积极状态。</span>
+                            </li>
+                            <li class="flex items-start space-x-2">
+                                <i class="fa fa-circle-o text-neutral mt-1"></i>
+                                <span class="text-neutral">与家长沟通，分享小明的成长和需要继续关注的方面。</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- 编辑模式 -->
+                <div id="schemeMeasuresEdit" class="space-y-6 hidden">
+                    <div class="mb-2">
+                        <label class="block text-sm font-medium text-neutral mb-1">帮扶措施详情</label>
+                        <textarea id="editSchemeMeasures" rows="12" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none">第1周：建立信任关系
+- 初次见面，了解小明的兴趣爱好和日常生活情况。
+- 一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。
+- 与小明约定每周固定的见面时间，增加安全感。
+
+第2周：情绪识别与表达
+- 通过情绪卡片游戏，帮助小明识别不同的情绪。
+- 引导小明用绘画的方式表达自己的内心感受。
+- 教授简单的情绪调节方法，如深呼吸、倾诉等。
+
+第3周：社交技能培养
+- 组织小组活动，鼓励小明与其他小朋友互动。
+- 角色扮演练习，学习如何与他人友好沟通。
+- 分享正面社交经验，增强小明的自信心。
+
+第4周：总结与展望
+- 回顾四周的变化，肯定小明的进步。
+- 共同制定后续计划，帮助小明保持积极状态。
+- 与家长沟通，分享小明的成长和需要继续关注的方面。</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI交互模块 -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+            <h2 class="text-xl font-bold text-dark mb-4 flex items-center">
+                <i class="fa fa-robot text-primary mr-2"></i>
+                AI助手 - 方案优化建议
+            </h2>
+            
+            <div id="aiAssistantSection" class="space-y-4">
+                <!-- AI建议显示区域 -->
+                <div id="aiSuggestionArea" class="bg-light p-4 rounded-lg">
+                    <div class="flex space-x-3 mb-3">
+                        <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-robot"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-dark">AI助手</p>
+                            <p class="text-xs text-neutral">刚刚</p>
+                        </div>
+                    </div>
+                    <p class="text-neutral mb-3">根据小明的最新情感分析数据，我建议在第3周的社交技能培养中增加以下内容：</p>
+                    <ul class="list-disc list-inside text-neutral text-sm space-y-1 pl-2">
+                        <li>增加"优点轰炸"活动，让小明和小伙伴互相赞美对方的优点</li>
+                        <li>尝试以小明感兴趣的话题为切入点，如动漫、游戏等，降低社交压力</li>
+                        <li>为小明提供具体的社交场景模拟，例如如何礼貌地加入他人的游戏</li>
+                    </ul>
+                </div>
+                
+                <!-- AI交互输入区域 -->
+                <div class="flex space-x-2">
+                    <input type="text" id="aiPromptInput" placeholder="向AI助手提问，例如：我想调整第3周的计划，有什么建议？" 
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    <button id="sendAiPromptBtn" 
+                        class="px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-custom">
+                        <i class="fa fa-paper-plane"></i>
+                    </button>
+                </div>
+                
+                <!-- AI优化按钮 -->
+                <div class="flex justify-center mt-4">
+                    <button id="optimizeWithAiBtn" 
+                        class="flex items-center space-x-2 px-6 py-2 bg-primary/10 text-primary hover:bg-primary/20 rounded-lg transition-custom">
+                        <i class="fa fa-magic"></i>
+                        <span>一键优化方案</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑操作按钮区域 -->
+        <div id="editActions" class="fixed bottom-6 right-6 flex space-x-4 hidden">
+            <button id="cancelEditBtn" 
+                class="px-6 py-2 border border-gray-300 text-neutral hover:bg-gray-50 rounded-lg shadow transition-custom">
+                取消
+            </button>
+            <button id="saveEditBtn" 
+                class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow transition-custom">
+                保存修改
+            </button>
+        </div>
+
+        <!-- AI生成优化中弹窗 -->
+        <div id="aiOptimizingModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
+                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
+                    <i class="fa fa-cog fa-spin text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-dark mb-2">方案优化中</h3>
+                <p class="text-neutral mb-6">AI正在为您优化帮扶方案，请稍候...</p>
+                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                    <div id="optimizeProgressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <p id="optimizeProgressText" class="text-xs text-neutral">已完成 0%</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 获取DOM元素
+        const backToListBtn = document.getElementById('backToListBtn');
+        const exportSchemeBtn = document.getElementById('exportSchemeBtn');
+        const editSchemeBtn = document.getElementById('editSchemeBtn');
+        const cancelEditBtn = document.getElementById('cancelEditBtn');
+        const saveEditBtn = document.getElementById('saveEditBtn');
+        const aiPromptInput = document.getElementById('aiPromptInput');
+        const sendAiPromptBtn = document.getElementById('sendAiPromptBtn');
+        const optimizeWithAiBtn = document.getElementById('optimizeWithAiBtn');
+        const aiOptimizingModal = document.getElementById('aiOptimizingModal');
+        const optimizeProgressBar = document.getElementById('optimizeProgressBar');
+        const optimizeProgressText = document.getElementById('optimizeProgressText');
+        const editActions = document.getElementById('editActions');
+        
+        // 视图和编辑模式的元素
+        const schemeInfoView = document.getElementById('schemeInfoView');
+        const schemeInfoEdit = document.getElementById('schemeInfoEdit');
+        const schemeTargetView = document.getElementById('schemeTargetView');
+        const schemeTargetEdit = document.getElementById('schemeTargetEdit');
+        const schemeMeasuresView = document.getElementById('schemeMeasuresView');
+        const schemeMeasuresEdit = document.getElementById('schemeMeasuresEdit');
+        
+        // 方案数据（这里使用模拟数据，实际应用中应该从服务器获取）
+        let schemeData = {
+            id: new URLSearchParams(window.location.search).get('schemeId') || '1',
+            code: 'SCH-20230710-001',
+            name: '小明情感陪伴与心理疏导方案',
+            type: 'emotional',
+            status: 'in-progress',
+            createDate: '2023-07-10',
+            expectedEndDate: '2023-08-10',
+            cycle: '4周',
+            childInfo: {
+                id: '1',
+                name: '小明',
+                age: 10,
+                gender: '男',
+                riskLevel: 'medium',
+                lastInteraction: '2023-07-15'
+            },
+            targets: [
+                '降低小明的孤独感和焦虑情绪，帮助建立积极乐观的心态。',
+                '引导小明正确表达内心感受，增强情绪管理能力。',
+                '鼓励小明参与社交活动，提高与人沟通和相处的能力。'
+            ],
+            measures: {
+                week1: {
+                    title: '建立信任关系',
+                    items: [
+                        '初次见面，了解小明的兴趣爱好和日常生活情况。',
+                        '一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。',
+                        '与小明约定每周固定的见面时间，增加安全感。'
+                    ],
+                    completed: true
+                },
+                week2: {
+                    title: '情绪识别与表达',
+                    items: [
+                        '通过情绪卡片游戏，帮助小明识别不同的情绪。',
+                        '引导小明用绘画的方式表达自己的内心感受。',
+                        '教授简单的情绪调节方法，如深呼吸、倾诉等。'
+                    ],
+                    completed: true
+                },
+                week3: {
+                    title: '社交技能培养',
+                    items: [
+                        '组织小组活动，鼓励小明与其他小朋友互动。',
+                        '角色扮演练习，学习如何与他人友好沟通。',
+                        '分享正面社交经验，增强小明的自信心。'
+                    ],
+                    completed: false
+                },
+                week4: {
+                    title: '总结与展望',
+                    items: [
+                        '回顾四周的变化，肯定小明的进步。',
+                        '共同制定后续计划，帮助小明保持积极状态。',
+                        '与家长沟通，分享小明的成长和需要继续关注的方面。'
+                    ],
+                    completed: false
+                }
+            }
+        };
+        
+        // 初始化页面数据
+        function initPageData() {
+            // 从URL参数中获取方案ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const schemeId = urlParams.get('schemeId');
+            
+            // 如果是编辑模式，直接进入编辑状态
+            if (urlParams.get('edit') === 'true') {
+                enableEditMode();
+            }
+            
+            // 这里可以根据方案ID从服务器获取数据
+            // 实际应用中，应该使用AJAX请求获取数据
+            
+            // 填充页面数据
+            document.getElementById('schemeCode').textContent = schemeData.code;
+            document.getElementById('schemeName').textContent = schemeData.name;
+            document.getElementById('createDate').textContent = schemeData.createDate;
+            document.getElementById('expectedEndDate').textContent = schemeData.expectedEndDate;
+            document.getElementById('schemeCycle').textContent = schemeData.cycle;
+            document.getElementById('childName').textContent = schemeData.childInfo.name;
+            
+            // 填充编辑表单
+            document.getElementById('editSchemeName').value = schemeData.name;
+            document.getElementById('editSchemeType').value = schemeData.type;
+            document.getElementById('editSchemeStatus').value = schemeData.status;
+            document.getElementById('editSchemeDuration').value = schemeData.cycle.replace('周', '');
+            document.getElementById('editExpectedEndDate').value = schemeData.expectedEndDate;
+            
+            // 填充目标和措施的编辑文本框
+            document.getElementById('editSchemeTargets').value = schemeData.targets.join('\n');
+            
+            let measuresText = '';
+            for (let i = 1; i <= 4; i++) {
+                const week = schemeData.measures[`week${i}`];
+                measuresText += `${week.title}\n`;
+                week.items.forEach(item => {
+                    measuresText += `- ${item}\n`;
+                });
+                if (i < 4) measuresText += '\n';
+            }
+            document.getElementById('editSchemeMeasures').value = measuresText;
+        }
+        
+        // 启用编辑模式
+        function enableEditMode() {
+            // 切换显示模式
+            schemeInfoView.classList.add('hidden');
+            schemeInfoEdit.classList.remove('hidden');
+            schemeTargetView.classList.add('hidden');
+            schemeTargetEdit.classList.remove('hidden');
+            schemeMeasuresView.classList.add('hidden');
+            schemeMeasuresEdit.classList.remove('hidden');
+            
+            // 显示编辑操作按钮
+            editActions.classList.remove('hidden');
+            
+            // 隐藏普通操作按钮
+            editSchemeBtn.classList.add('hidden');
+            exportSchemeBtn.classList.add('hidden');
+        }
+        
+        // 禁用编辑模式
+        function disableEditMode() {
+            // 切换显示模式
+            schemeInfoView.classList.remove('hidden');
+            schemeInfoEdit.classList.add('hidden');
+            schemeTargetView.classList.remove('hidden');
+            schemeTargetEdit.classList.add('hidden');
+            schemeMeasuresView.classList.remove('hidden');
+            schemeMeasuresEdit.classList.add('hidden');
+            
+            // 隐藏编辑操作按钮
+            editActions.classList.add('hidden');
+            
+            // 显示普通操作按钮
+            editSchemeBtn.classList.remove('hidden');
+            exportSchemeBtn.classList.remove('hidden');
+        }
+        
+        // 保存方案修改
+        function saveSchemeChanges() {
+            // 收集表单数据
+            const updatedData = {
+                id: schemeData.id,
+                code: schemeData.code,
+                name: document.getElementById('editSchemeName').value,
+                type: document.getElementById('editSchemeType').value,
+                status: document.getElementById('editSchemeStatus').value,
+                createDate: schemeData.createDate,
+                expectedEndDate: document.getElementById('editExpectedEndDate').value,
+                cycle: document.getElementById('editSchemeDuration').value + '周',
+                targets: document.getElementById('editSchemeTargets').value.split('\n').filter(line => line.trim() !== ''),
+                // 这里可以添加措施数据的更新逻辑
+            };
+            
+            // 实际应用中，应该使用AJAX请求提交数据到服务器
+            console.log('保存方案修改:', updatedData);
+            
+            // 更新方案数据
+            schemeData = { ...schemeData, ...updatedData };
+            
+            // 重新初始化页面数据
+            initPageData();
+            
+            // 禁用编辑模式
+            disableEditMode();
+            
+            // 显示成功提示
+            alert('方案已成功保存！');
+        }
+        
+        // 发送AI提示
+        function sendAiPrompt() {
+            const prompt = aiPromptInput.value.trim();
+            if (!prompt) return;
+            
+            // 模拟AI响应
+            const aiResponses = [
+                '非常好的问题！我建议您可以这样调整第3周的计划...',
+                '根据儿童心理学的研究，您可以尝试增加一些互动性更强的活动...',
+                '考虑到小明的性格特点，我认为采用循序渐进的方式会更有效...',
+                '您的想法很有见地！我可以帮您进一步完善这个计划...',
+                '根据类似案例的成功经验，我建议您重点关注以下几个方面...'
+            ];
+            
+            const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+            
+            // 更新AI建议区域
+            const aiSuggestionArea = document.getElementById('aiSuggestionArea');
+            aiSuggestionArea.innerHTML = `
+                <div class="flex space-x-3 mb-3">
+                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-dark">李社工</p>
+                        <p class="text-xs text-neutral">刚刚</p>
+                    </div>
+                </div>
+                <p class="text-neutral mb-3">${prompt}</p>
+                <div class="flex space-x-3 mb-3">
+                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                        <i class="fa fa-robot"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-dark">AI助手</p>
+                        <p class="text-xs text-neutral">刚刚</p>
+                    </div>
+                </div>
+                <p class="text-neutral mb-3">${randomResponse}</p>
+            `;
+            
+            // 清空输入框
+            aiPromptInput.value = '';
+            
+            // 滚动到AI建议区域
+            aiSuggestionArea.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // 模拟AI优化进度
+        function simulateOptimizationProgress() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    // 进度完成后关闭弹窗并显示成功提示
+                    setTimeout(() => {
+                        aiOptimizingModal.classList.add('hidden');
+                        alert('方案已成功优化！');
+                        
+                        // 模拟优化后的方案内容
+                        document.getElementById('editSchemeMeasures').value += '\n\n（AI优化建议）增加"优点轰炸"活动，让小明和小伙伴互相赞美对方的优点。';
+                    }, 500);
+                }
+                optimizeProgressBar.style.width = progress + '%';
+                optimizeProgressText.textContent = '已完成 ' + Math.round(progress) + '%';
+            }, 300);
+        }
+        
+        // 事件监听器
+        backToListBtn.addEventListener('click', function() {
+            window.location.href = 'social-worker-schemes.html';
+        });
+        
+        exportSchemeBtn.addEventListener('click', function() {
+            // 实际应用中，应该调用导出API
+            alert('方案导出功能将在后续版本中实现');
+        });
+        
+        editSchemeBtn.addEventListener('click', enableEditMode);
+        
+        cancelEditBtn.addEventListener('click', disableEditMode);
+        
+        saveEditBtn.addEventListener('click', saveSchemeChanges);
+        
+        sendAiPromptBtn.addEventListener('click', sendAiPrompt);
+        
+        aiPromptInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendAiPrompt();
+            }
+        });
+        
+        optimizeWithAiBtn.addEventListener('click', function() {
+            // 显示优化中弹窗
+            aiOptimizingModal.classList.remove('hidden');
+            
+            // 重置进度条
+            optimizeProgressBar.style.width = '0%';
+            optimizeProgressText.textContent = '已完成 0%';
+            
+            // 开始模拟进度
+            setTimeout(simulateOptimizationProgress, 500);
+        });
+        
+        // 页面加载完成后初始化数据
+        window.addEventListener('load', initPageData);
+    </script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紧急呼叫记录 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <h1 class="text-2xl font-bold text-dark">紧急呼叫记录</h1>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
+                        <i class="fa fa-refresh"></i>
+                        <span class="hidden sm:inline-block">刷新</span>
+                    </button>
+                    <div class="relative group">
+                        <button class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-custom">
+                            <i class="fa fa-filter"></i>
+                            <span>筛选</span>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                            <div class="py-2">
+                                <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                    全部状态
+                                </a>
+                                <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                    待处理
+                                </a>
+                                <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                    处理中
+                                </a>
+                                <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                    已解决
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-neutral mt-1">查看儿童紧急呼叫记录及处理状态</p>
+        </div>
+        
+        <!-- 统计卡片 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-5 transform hover:-translate-y-1 transition-custom">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">总紧急呼叫</p>
+                        <h3 class="text-2xl font-bold text-dark mt-1">24</h3>
+                        <p class="text-success text-xs mt-1"><i class="fa fa-arrow-up"></i> 较上月 +12%</p>
+                    </div>
+                    <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center text-danger">
+                        <i class="fa fa-exclamation-triangle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-5 transform hover:-translate-y-1 transition-custom">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">待处理</p>
+                        <h3 class="text-2xl font-bold text-danger mt-1">3</h3>
+                        <p class="text-danger text-xs mt-1"><i class="fa fa-arrow-up"></i> 较昨日 +1</p>
+                    </div>
+                    <div class="w-12 h-12 bg-warning/10 rounded-full flex items-center justify-center text-warning">
+                        <i class="fa fa-clock-o text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-5 transform hover:-translate-y-1 transition-custom">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">处理中</p>
+                        <h3 class="text-2xl font-bold text-warning mt-1">5</h3>
+                        <p class="text-danger text-xs mt-1"><i class="fa fa-arrow-up"></i> 较昨日 +2</p>
+                    </div>
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                        <i class="fa fa-cog fa-spin text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-5 transform hover:-translate-y-1 transition-custom">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">已解决</p>
+                        <h3 class="text-2xl font-bold text-success mt-1">16</h3>
+                        <p class="text-success text-xs mt-1"><i class="fa fa-arrow-up"></i> 较昨日 +4</p>
+                    </div>
+                    <div class="w-12 h-12 bg-success/10 rounded-full flex items-center justify-center text-success">
+                        <i class="fa fa-check-circle text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图表区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-5">
+                <h3 class="text-lg font-semibold text-dark mb-4">紧急呼叫趋势</h3>
+                <div class="w-full h-64">
+                    <canvas id="emergencyTrendChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-md p-5">
+                <h3 class="text-lg font-semibold text-dark mb-4">紧急呼叫类型分布</h3>
+                <div class="w-full h-64">
+                    <canvas id="emergencyTypeChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="搜索儿童姓名/呼叫原因" 
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"></i>
+                </div>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="processing">处理中</option>
+                    <option value="resolved">已解决</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有儿童</option>
+                    <option value="1">小明 (10岁)</option>
+                    <option value="2">小红 (12岁)</option>
+                    <option value="3">小华 (11岁)</option>
+                    <option value="4">小美 (9岁)</option>
+                    <option value="5">小强 (13岁)</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">呼叫日期:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">至:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex space-x-2">
+                    <button class="flex-1 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg transition-custom">
+                        筛选
+                    </button>
+                    <button class="flex-1 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg transition-custom">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 紧急呼叫记录列表 -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>序号</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>儿童</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>呼叫原因</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>呼叫时间</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>处理状态</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>处理人</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>最近更新</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-neutral uppercase tracking-wider">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 紧急呼叫1 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小明 (10岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate">
+                                    <span class="text-neutral">感到孤独，想念父母，情绪低落</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15 14:23</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    待处理
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                                <span class="inline-flex items-center">
+                                    <div class="w-6 h-6 bg-gray-200 rounded-full mr-2"></div>
+                                    <span>待分配</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15 14:23</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-danger hover:text-danger/80 transition-custom">
+                                        <i class="fa fa-exclamation-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 紧急呼叫2 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小红 (12岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate">
+                                    <span class="text-neutral">遇到学习困难，感到沮丧</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15 11:35</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    待处理
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                                <span class="inline-flex items-center">
+                                    <div class="w-6 h-6 bg-gray-200 rounded-full mr-2"></div>
+                                    <span>待分配</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15 11:35</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-danger hover:text-danger/80 transition-custom">
+                                        <i class="fa fa-exclamation-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 紧急呼叫3 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">3</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小华 (11岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate">
+                                    <span class="text-neutral">与同学发生争执，感到委屈</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-14 16:40</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    处理中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                                <span class="inline-flex items-center">
+                                    <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">李</div>
+                                    <span>李社工</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15 09:15</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-warning hover:text-warning/80 transition-custom">
+                                        <i class="fa fa-cog"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 紧急呼叫4 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">4</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小美 (9岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate">
+                                    <span class="text-neutral">身体不适，需要帮助</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-14 10:20</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    已解决
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                                <span class="inline-flex items-center">
+                                    <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">张</div>
+                                    <span>张社工</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-14 11:30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-secondary hover:text-secondary/80 transition-custom">
+                                        <i class="fa fa-check-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 紧急呼叫5 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">5</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小强 (13岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="max-w-xs truncate">
+                                    <span class="text-neutral">感到焦虑，无法集中注意力学习</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-13 15:15</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    已解决
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">
+                                <span class="inline-flex items-center">
+                                    <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">王</div>
+                                    <span>王社工</span>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-13 16:45</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-secondary hover:text-secondary/80 transition-custom">
+                                        <i class="fa fa-check-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        上一页
+                    </button>
+                    <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        下一页
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-neutral">
+                            显示第 <span class="font-medium">1</span> 到 <span class="font-medium">5</span> 条，共 <span class="font-medium">24</span> 条结果
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">上一页</span>
+                                <i class="fa fa-chevron-left text-xs"></i>
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                1
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                2
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                3
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral">
+                                ...
+                            </span>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                5
+                            </button>
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">下一页</span>
+                                <i class="fa fa-chevron-right text-xs"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 查看呼叫详情弹窗 -->
+    <div id="viewEmergencyModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-dark">紧急呼叫详情</h3>
+                <button id="closeViewEmergencyModal" class="text-neutral hover:text-dark transition-custom">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-8">
+                <!-- 呼叫基本信息 -->
+                <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">基本信息</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-light p-4 rounded-lg">
+                            <p class="text-sm text-neutral mb-1">儿童信息</p>
+                            <div class="flex items-center space-x-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs">
+                                    <i class="fa fa-child"></i>
+                                </div>
+                                <p class="font-medium text-dark">小明 (10岁)</p>
+                            </div>
+                        </div>
+                        <div class="bg-light p-4 rounded-lg">
+                            <p class="text-sm text-neutral mb-1">呼叫时间</p>
+                            <p class="font-medium text-dark">2023-07-15 14:23:45</p>
+                        </div>
+                        <div class="bg-light p-4 rounded-lg">
+                            <p class="text-sm text-neutral mb-1">当前状态</p>
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                待处理
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 呼叫原因与详情 -->
+                <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">呼叫原因与详情</h4>
+                    <div class="bg-light p-6 rounded-lg">
+                        <div class="flex mb-4">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-exclamation-circle text-danger"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-neutral mb-1">呼叫原因</p>
+                                <p class="text-dark font-medium">感到孤独，想念父母，情绪低落</p>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-info-circle text-primary"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-neutral mb-1">详细描述</p>
+                                <p class="text-dark">今天是小明的生日，但父母因工作原因无法回家陪伴，小明感到非常孤独和难过。从聊天记录来看，他提到"今天是我的生日，但爸爸妈妈都不在家，我好想他们"，并表现出明显的情绪低落。AI助手已进行初步情绪安抚，但建议社工尽快跟进。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 相关聊天记录 -->
+                <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">相关聊天记录</h4>
+                    <div class="bg-light p-4 rounded-lg max-h-64 overflow-y-auto">
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <div class="flex items-center mb-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">AI</div>
+                                <span class="text-sm text-neutral">AI助手</span>
+                                <span class="text-xs text-neutral ml-auto">14:20:15</span>
+                            </div>
+                            <p class="text-dark text-sm ml-8">小明，今天是你的生日啊！生日快乐！虽然爸爸妈妈不在身边，但他们一定也很想念你，肯定也为你准备了惊喜！</p>
+                        </div>
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <div class="flex items-center mb-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">小</div>
+                                <span class="text-sm text-neutral">小明</span>
+                                <span class="text-xs text-neutral ml-auto">14:21:30</span>
+                            </div>
+                            <p class="text-dark text-sm ml-8">谢谢...但我还是好想爸爸妈妈，今天他们都没给我打电话...</p>
+                        </div>
+                        <div class="mb-4 pb-4 border-b border-gray-200">
+                            <div class="flex items-center mb-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">AI</div>
+                                <span class="text-sm text-neutral">AI助手</span>
+                                <span class="text-xs text-neutral ml-auto">14:22:05</span>
+                            </div>
+                            <p class="text-dark text-sm ml-8">别难过，也许他们工作很忙，等下就会给你打电话了。需要我帮你联系社工姐姐吗？她可以来陪你聊天哦。</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center mb-2">
+                                <div class="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs mr-2">小</div>
+                                <span class="text-sm text-neutral">小明</span>
+                                <span class="text-xs text-neutral ml-auto">14:23:45</span>
+                            </div>
+                            <p class="text-dark text-sm ml-8">好的，我想和社工姐姐聊聊...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 处理记录 -->
+                <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">处理记录</h4>
+                    <div class="bg-light p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-danger/10 rounded-full flex items-center justify-center text-danger">
+                                    <i class="fa fa-bell"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-dark font-medium">紧急呼叫已创建</p>
+                                    <p class="text-xs text-neutral">系统自动创建</p>
+                                </div>
+                            </div>
+                            <span class="text-xs text-neutral">2023-07-15 14:23:45</span>
+                        </div>
+                        <div class="text-center py-4">
+                            <p class="text-sm text-neutral">暂无处理记录，请尽快处理</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 处理操作 -->
+                <div>
+                    <h4 class="text-lg font-semibold text-dark mb-4">处理操作</h4>
+                    <div class="bg-light p-4 rounded-lg">
+                        <div class="mb-4">
+                            <label for="handleStatus" class="block text-sm font-medium text-neutral mb-1">处理状态</label>
+                            <select id="handleStatus" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                                <option value="pending">待处理</option>
+                                <option value="processing">处理中</option>
+                                <option value="resolved">已解决</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="handlePerson" class="block text-sm font-medium text-neutral mb-1">处理人</label>
+                            <select id="handlePerson" 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                                <option value="">请选择处理人</option>
+                                <option value="1">李社工</option>
+                                <option value="2">张社工</option>
+                                <option value="3">王社工</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label for="handleNotes" class="block text-sm font-medium text-neutral mb-1">处理记录</label>
+                            <textarea id="handleNotes" rows="3" placeholder="请输入处理记录..." 
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none"></textarea>
+                        </div>
+                        <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                            <button id="cancelHandleEmergency" 
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                                取消
+                            </button>
+                            <button id="saveHandleEmergency" 
+                                class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow transition-custom">
+                                保存处理记录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                    <button id="closeViewEmergencyBtn" 
+                        class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow transition-custom">
+                        关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const refreshBtn = document.getElementById('refreshBtn');
+        const viewEmergencyModal = document.getElementById('viewEmergencyModal');
+        const closeViewEmergencyModal = document.getElementById('closeViewEmergencyModal');
+        const closeViewEmergencyBtn = document.getElementById('closeViewEmergencyBtn');
+        const saveHandleEmergency = document.getElementById('saveHandleEmergency');
+        const cancelHandleEmergency = document.getElementById('cancelHandleEmergency');
+        
+        // 刷新按钮点击事件
+        refreshBtn.addEventListener('click', function() {
+            // 显示刷新动画
+            this.querySelector('i').classList.add('fa-spin');
+            setTimeout(() => {
+                this.querySelector('i').classList.remove('fa-spin');
+                // 这里可以添加刷新数据的逻辑
+                alert('数据已刷新');
+            }, 1000);
+        });
+        
+        // 关闭查看呼叫详情弹窗
+        function closeViewModal() {
+            viewEmergencyModal.classList.add('hidden');
+        }
+        
+        closeViewEmergencyModal.addEventListener('click', closeViewModal);
+        closeViewEmergencyBtn.addEventListener('click', closeViewModal);
+        cancelHandleEmergency.addEventListener('click', closeViewModal);
+        
+        viewEmergencyModal.addEventListener('click', function(e) {
+            if (e.target === viewEmergencyModal) {
+                closeViewModal();
+            }
+        });
+        
+        // 保存处理记录
+        saveHandleEmergency.addEventListener('click', function() {
+            const handleStatus = document.getElementById('handleStatus').value;
+            const handlePerson = document.getElementById('handlePerson').value;
+            const handleNotes = document.getElementById('handleNotes').value;
+            
+            if (!handleStatus) {
+                alert('请选择处理状态');
+                return;
+            }
+            
+            if (handleStatus !== 'pending' && !handlePerson) {
+                alert('请选择处理人');
+                return;
+            }
+            
+            if (handleStatus !== 'pending' && !handleNotes) {
+                alert('请输入处理记录');
+                return;
+            }
+            
+            alert('处理记录已保存');
+            closeViewModal();
+        });
+        
+        // 为表格中的操作按钮添加事件
+        document.querySelectorAll('table button').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('i').className;
+                
+                if (action.includes('fa-eye')) {
+                    // 查看详情
+                    viewEmergencyModal.classList.remove('hidden');
+                } else if (action.includes('fa-exclamation-circle')) {
+                    // 紧急处理
+                    alert('已标记为紧急处理，系统将优先推送此任务');
+                } else if (action.includes('fa-cog')) {
+                    // 正在处理
+                    alert('正在处理中，请查看详情了解更多信息');
+                } else if (action.includes('fa-check-circle')) {
+                    // 已解决
+                    alert('该紧急呼叫已成功解决');
+                }
+            });
+        });
+        
+        // 初始化图表
+        window.addEventListener('load', function() {
+            initEmergencyTrendChart();
+            initEmergencyTypeChart();
+        });
+        
+        // 初始化紧急呼叫趋势图表
+        function initEmergencyTrendChart() {
+            const ctx = document.getElementById('emergencyTrendChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['7/1', '7/2', '7/3', '7/4', '7/5', '7/6', '7/7', '7/8', '7/9', '7/10', '7/11', '7/12', '7/13', '7/14', '7/15'],
+                    datasets: [
+                        {
+                            label: '紧急呼叫',
+                            data: [1, 0, 2, 1, 3, 1, 2, 0, 1, 2, 1, 0, 2, 2, 2],
+                            backgroundColor: '#EF4444',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 初始化紧急呼叫类型分布图表
+        function initEmergencyTypeChart() {
+            const ctx = document.getElementById('emergencyTypeChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['情感支持', '学习困难', '身体不适', '家庭问题', '社交冲突', '其他'],
+                    datasets: [
+                        {
+                            data: [8, 5, 3, 4, 2, 2],
+                            backgroundColor: [
+                                '#4F46E5',
+                                '#10B981',
+                                '#EF4444',
+                                '#F97316',
+                                '#F59E0B',
+                                '#6B7280'
+                            ],
+                            borderWidth: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+    </script>
+</body>
+</html>

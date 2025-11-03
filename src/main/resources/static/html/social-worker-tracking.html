@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮扶跟踪管理 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .progress-bar-animated {
+                animation: progress 2s ease-in-out;
+            }
+            @keyframes progress {
+                from { width: 0; }
+                to { width: var(--progress-width); }
+            }
+            .timeline-connector {
+                position: absolute;
+                left: 24px;
+                top: 24px;
+                bottom: 0;
+                width: 2px;
+                background-color: #E5E7EB;
+                z-index: 0;
+            }
+            .timeline-item::before {
+                content: '';
+                position: absolute;
+                left: 18px;
+                top: 18px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                z-index: 10;
+            }
+            .timeline-item.completed::before {
+                background-color: #22C55E;
+                border: 2px solid #D1FAE5;
+            }
+            .timeline-item.in-progress::before {
+                background-color: #4F46E5;
+                border: 2px solid #E0E7FF;
+            }
+            .timeline-item.pending::before {
+                background-color: #F59E0B;
+                border: 2px solid #FEF3C7;
+            }
+            .timeline-item.unfinished::before {
+                background-color: #EF4444;
+                border: 2px solid #FEE2E2;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4 sticky top-0 z-30">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <h1 class="text-2xl font-bold text-dark">帮扶跟踪管理</h1>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
+                        <i class="fa fa-refresh"></i>
+                        <span class="hidden sm:inline-block">刷新</span>
+                    </button>
+                    <button id="exportBtn" class="flex items-center space-x-2 bg-secondary hover:bg-secondary/90 text-white px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-download"></i>
+                        <span>导出进度报告</span>
+                    </button>
+                </div>
+            </div>
+            <p class="text-neutral mt-1">实时跟踪所有帮扶方案的执行进度，支持数据可视化和详情查看</p>
+        </div>
+        
+        <!-- 数据概览卡片 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6 transition-custom hover:shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">总方案数</p>
+                        <h3 class="text-3xl font-bold text-dark mt-1">32</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <i class="fa fa-file-text-o text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-neutral">
+                    <span class="inline-flex items-center text-success mr-3">
+                        <i class="fa fa-arrow-up mr-1"></i> 12%
+                    </span>
+                    <span>较上月</span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 transition-custom hover:shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">进行中方案</p>
+                        <h3 class="text-3xl font-bold text-dark mt-1">18</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
+                        <i class="fa fa-spinner text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-neutral">
+                    <span class="inline-flex items-center text-success mr-3">
+                        <i class="fa fa-arrow-up mr-1"></i> 8%
+                    </span>
+                    <span>较上月</span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 transition-custom hover:shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">已完成方案</p>
+                        <h3 class="text-3xl font-bold text-dark mt-1">10</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center text-success">
+                        <i class="fa fa-check-circle text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-neutral">
+                    <span class="inline-flex items-center text-success mr-3">
+                        <i class="fa fa-arrow-up mr-1"></i> 15%
+                    </span>
+                    <span>较上月</span>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6 transition-custom hover:shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-neutral text-sm">平均完成率</p>
+                        <h3 class="text-3xl font-bold text-dark mt-1">83%</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center text-warning">
+                        <i class="fa fa-bar-chart text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center text-xs text-neutral">
+                    <span class="inline-flex items-center text-danger mr-3">
+                        <i class="fa fa-arrow-down mr-1"></i> 3%
+                    </span>
+                    <span>较上月</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 进度统计图表 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-dark">方案状态分布</h3>
+                    <div class="text-xs text-neutral">
+                        <select class="border-none bg-transparent outline-none">
+                            <option>近30天</option>
+                            <option>近90天</option>
+                            <option>全年</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="schemeStatusChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-dark">帮扶进度趋势</h3>
+                    <div class="text-xs text-neutral">
+                        <select class="border-none bg-transparent outline-none">
+                            <option>近8周</option>
+                            <option>近12周</option>
+                            <option>近24周</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="h-64">
+                    <canvas id="progressTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="搜索方案名称/儿童姓名" 
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"></i>
+                </div>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有方案状态</option>
+                    <option value="in-progress">进行中</option>
+                    <option value="completed">已完成</option>
+                    <option value="pending">待审核</option>
+                    <option value="delayed">已延迟</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有方案类型</option>
+                    <option value="emotional">情感陪伴</option>
+                    <option value="educational">教育支持</option>
+                    <option value="behavioral">行为引导</option>
+                    <option value="family">家庭沟通</option>
+                    <option value="comprehensive">综合帮扶</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">开始日期:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">结束日期:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex space-x-2">
+                    <button class="flex-1 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg transition-custom">
+                        筛选
+                    </button>
+                    <button class="flex-1 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg transition-custom">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 帮扶跟踪列表 -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">序号</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">方案名称</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">儿童</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">方案类型</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">状态</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">完成进度</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">预计完成时间</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-neutral uppercase tracking-wider">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 方案1 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小明情感陪伴与心理疏导方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小明 (10岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                    情感陪伴
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    进行中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                                    <div class="bg-secondary h-2.5 rounded-full progress-bar-animated" style="--progress-width: 65%; width: 65%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-neutral">
+                                    <span>13/20个任务</span>
+                                    <span>65%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-10</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案2 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小红学习支持与自信心培养方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小红 (12岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
+                                    教育支持
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    待审核
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                                    <div class="bg-warning h-2.5 rounded-full progress-bar-animated" style="--progress-width: 25%; width: 25%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-neutral">
+                                    <span>4/16个任务</span>
+                                    <span>25%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-09-12</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案3 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">3</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小华行为习惯引导与兴趣培养方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小华 (11岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    行为引导
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                                    已完成
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                                    <div class="bg-success h-2.5 rounded-full progress-bar-animated" style="--progress-width: 100%; width: 100%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-neutral">
+                                    <span>12/12个任务</span>
+                                    <span>100%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-28</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案4 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">4</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小美家庭沟通改善与情感支持方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小美 (9岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    家庭沟通
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    已延迟
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                                    <div class="bg-danger h-2.5 rounded-full progress-bar-animated" style="--progress-width: 70%; width: 70%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-neutral">
+                                    <span>14/20个任务</span>
+                                    <span>70%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案5 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">5</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小强综合能力提升与心理建设方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小强 (13岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    综合帮扶
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                    进行中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mb-1">
+                                    <div class="bg-primary h-2.5 rounded-full progress-bar-animated" style="--progress-width: 40%; width: 40%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-neutral">
+                                    <span>8/20个任务</span>
+                                    <span>40%</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-20</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        上一页
+                    </button>
+                    <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        下一页
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-neutral">
+                            显示第 <span class="font-medium">1</span> 到 <span class="font-medium">5</span> 条，共 <span class="font-medium">32</span> 条结果
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">上一页</span>
+                                <i class="fa fa-chevron-left text-xs"></i>
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                1
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                2
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                3
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral">
+                                ...
+                            </span>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                7
+                            </button>
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">下一页</span>
+                                <i class="fa fa-chevron-right text-xs"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+
+    </main>
+
+    <script>
+        // 获取DOM元素
+        const refreshBtn = document.getElementById('refreshBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        
+        // 刷新按钮点击事件
+        refreshBtn.addEventListener('click', function() {
+            // 显示刷新动画
+            this.querySelector('i').classList.add('fa-spin');
+            setTimeout(() => {
+                this.querySelector('i').classList.remove('fa-spin');
+                // 这里可以添加刷新数据的逻辑
+                alert('数据已刷新');
+            }, 1000);
+        });
+        
+        // 导出按钮点击事件
+        exportBtn.addEventListener('click', function() {
+            alert('正在准备导出进度报告，请稍候...');
+            // 实际应用中，应该调用导出API
+        });
+        
+        // 为表格中的操作按钮添加事件
+        document.querySelectorAll('table button').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('i').className;
+                const trackingRow = this.closest('tr');
+                const schemeName = trackingRow.querySelector('.font-medium').textContent;
+                // 获取方案ID（这里使用行索引作为临时ID，实际应用中应该从数据属性或其他地方获取）
+                const schemeId = trackingRow.rowIndex;
+                
+                if (action.includes('fa-eye')) {
+                    // 查看详情
+                    window.location.href = `social-worker-scheme-detail.html?schemeId=${schemeId}`;
+                } else if (action.includes('fa-pencil')) {
+                    // 编辑方案
+                    window.location.href = `social-worker-scheme-detail.html?schemeId=${schemeId}&edit=true`;
+                } else if (action.includes('fa-trash')) {
+                    // 删除记录
+                    if (confirm(`确定要删除帮扶跟踪记录：${schemeName}吗？`)) {
+                        // 实际应用中，应该调用删除API
+                        alert(`帮扶跟踪记录已删除`);
+                    }
+                }
+            });
+        });
+        
+        // 初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 方案状态分布图表
+            const schemeStatusCtx = document.getElementById('schemeStatusChart').getContext('2d');
+            const schemeStatusChart = new Chart(schemeStatusCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['进行中', '已完成', '待审核', '已延迟'],
+                    datasets: [{
+                        data: [18, 10, 3, 1],
+                        backgroundColor: [
+                            '#10B981', // 绿色 - 进行中
+                            '#22C55E', // 成功绿 - 已完成
+                            '#F59E0B', // 警告黄 - 待审核
+                            '#EF4444'  // 危险红 - 已延迟
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+            
+            // 帮扶进度趋势图表
+            const progressTrendCtx = document.getElementById('progressTrendChart').getContext('2d');
+            const progressTrendChart = new Chart(progressTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['第1周', '第2周', '第3周', '第4周', '第5周', '第6周', '第7周', '第8周'],
+                    datasets: [{
+                        label: '计划完成率',
+                        data: [25, 50, 75, 100, 125, 150, 175, 200],
+                        borderColor: '#4F46E5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#4F46E5'
+                    }, {
+                        label: '实际完成率',
+                        data: [20, 45, 65, 90, 110, 135, 155, 175],
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#10B981'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: {
+                                drawBorder: false,
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const value = context.raw || 0;
+                                    return `${label}: ${value}%`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童管理 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <h1 class="text-2xl font-bold text-dark">儿童管理</h1>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
+                        <i class="fa fa-refresh"></i>
+                        <span class="hidden sm:inline-block">刷新</span>
+                    </button>
+                    <button id="addChildBtn" class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-plus"></i>
+                        <span>添加儿童</span>
+                    </button>
+                </div>
+            </div>
+            <p class="text-neutral mt-1">管理您负责帮扶的所有儿童信息和状态</p>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="搜索儿童姓名/身份证号" 
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"></i>
+                </div>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有帮扶状态</option>
+                    <option value="pending">待帮扶</option>
+                    <option value="in-progress">帮扶中</option>
+                    <option value="completed">已完成</option>
+                    <option value="on-hold">暂停帮扶</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有年龄段</option>
+                    <option value="6-8">6-8岁</option>
+                    <option value="9-11">9-11岁</option>
+                    <option value="12-14">12-14岁</option>
+                    <option value="15-18">15-18岁</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有性别</option>
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有风险等级</option>
+                    <option value="low">低风险</option>
+                    <option value="medium">中风险</option>
+                    <option value="high">高风险</option>
+                    <option value="urgent">紧急</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button class="flex-1 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg transition-custom">
+                        筛选
+                    </button>
+                    <button class="flex-1 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg transition-custom">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 儿童列表 -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>序号</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>姓名</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>性别</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>年龄</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>联系电话</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>风险等级</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>帮扶状态</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>最近互动</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-neutral uppercase tracking-wider">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 儿童1 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小明</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">男</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">10岁</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">138****1234</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    紧急
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                    帮扶中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">今天 10:30</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 儿童2 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小红</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">女</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">12岁</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">139****5678</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    中风险
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                    帮扶中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">昨天 16:45</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 儿童3 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">3</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小华</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">男</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">11岁</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">137****9012</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    低风险
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    待帮扶
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">3天前</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 儿童4 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">4</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小美</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">女</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">9岁</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">136****3456</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    紧急
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                                    已完成
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">上周</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 儿童5 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">5</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child"></i>
+                                    </div>
+                                    <span class="text-dark font-medium">小强</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">男</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">13岁</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">135****7890</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    中风险
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    暂停帮扶
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2周前</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        上一页
+                    </button>
+                    <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        下一页
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-neutral">
+                            显示第 <span class="font-medium">1</span> 到 <span class="font-medium">5</span> 条，共 <span class="font-medium">48</span> 条结果
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">上一页</span>
+                                <i class="fa fa-chevron-left text-xs"></i>
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                1
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                2
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                3
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral">
+                                ...
+                            </span>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                10
+                            </button>
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">下一页</span>
+                                <i class="fa fa-chevron-right text-xs"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 添加儿童弹窗 -->
+    <div id="addChildModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-dark">添加儿童信息</h3>
+                <button id="closeAddChildModal" class="text-neutral hover:text-dark transition-custom">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="addChildForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="childName" class="block text-sm font-medium text-neutral mb-1">姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="childName" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div>
+                        <label for="childGender" class="block text-sm font-medium text-neutral mb-1">性别 <span class="text-danger">*</span></label>
+                        <select id="childGender" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                            <option value="">请选择</option>
+                            <option value="male">男</option>
+                            <option value="female">女</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="childBirthDate" class="block text-sm font-medium text-neutral mb-1">出生日期 <span class="text-danger">*</span></label>
+                        <input type="date" id="childBirthDate" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div>
+                        <label for="childIdCard" class="block text-sm font-medium text-neutral mb-1">身份证号 <span class="text-danger">*</span></label>
+                        <input type="text" id="childIdCard" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div>
+                        <label for="childPhone" class="block text-sm font-medium text-neutral mb-1">联系电话 <span class="text-danger">*</span></label>
+                        <input type="tel" id="childPhone" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div>
+                        <label for="childRiskLevel" class="block text-sm font-medium text-neutral mb-1">风险等级 <span class="text-danger">*</span></label>
+                        <select id="childRiskLevel" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                            <option value="">请选择</option>
+                            <option value="low">低风险</option>
+                            <option value="medium">中风险</option>
+                            <option value="high">高风险</option>
+                            <option value="urgent">紧急</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="childGuardianName" class="block text-sm font-medium text-neutral mb-1">监护人姓名 <span class="text-danger">*</span></label>
+                        <input type="text" id="childGuardianName" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div>
+                        <label for="childGuardianPhone" class="block text-sm font-medium text-neutral mb-1">监护人电话 <span class="text-danger">*</span></label>
+                        <input type="tel" id="childGuardianPhone" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label for="childAddress" class="block text-sm font-medium text-neutral mb-1">家庭地址 <span class="text-danger">*</span></label>
+                        <input type="text" id="childAddress" required 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label for="childNotes" class="block text-sm font-medium text-neutral mb-1">备注</label>
+                        <textarea id="childNotes" rows="3" 
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button type="button" id="cancelAddChild" 
+                        class="px-6 py-2 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                        取消
+                    </button>
+                    <button type="submit" 
+                        class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow transition-custom">
+                        保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const addChildBtn = document.getElementById('addChildBtn');
+        const addChildModal = document.getElementById('addChildModal');
+        const closeAddChildModal = document.getElementById('closeAddChildModal');
+        const cancelAddChild = document.getElementById('cancelAddChild');
+        const addChildForm = document.getElementById('addChildForm');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        // 打开添加儿童弹窗
+        addChildBtn.addEventListener('click', function() {
+            addChildModal.classList.remove('hidden');
+            // 重置表单
+            addChildForm.reset();
+        });
+        
+        // 关闭添加儿童弹窗
+        function closeModal() {
+            addChildModal.classList.add('hidden');
+        }
+        
+        closeAddChildModal.addEventListener('click', closeModal);
+        cancelAddChild.addEventListener('click', closeModal);
+        
+        addChildModal.addEventListener('click', function(e) {
+            if (e.target === addChildModal) {
+                closeModal();
+            }
+        });
+        
+        // 刷新按钮点击事件
+        refreshBtn.addEventListener('click', function() {
+            // 显示刷新动画
+            this.querySelector('i').classList.add('fa-spin');
+            setTimeout(() => {
+                this.querySelector('i').classList.remove('fa-spin');
+                // 这里可以添加刷新数据的逻辑
+                alert('数据已刷新');
+            }, 1000);
+        });
+        
+        // 表单提交事件
+        addChildForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 获取表单数据
+            const formData = new FormData(this);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+            
+            // 模拟提交成功
+            console.log('提交的儿童信息:', data);
+            
+            // 显示成功提示
+            alert('儿童信息添加成功');
+            
+            // 关闭弹窗
+            closeModal();
+        });
+        
+        // 为表格中的操作按钮添加事件
+        document.querySelectorAll('table button').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('i').className;
+                const childName = this.closest('tr').querySelector('.font-medium').textContent;
+                
+                if (action.includes('fa-eye')) {
+                    // 查看详情
+                    alert(`查看${childName}的详情`);
+                } else if (action.includes('fa-pencil')) {
+                    // 编辑信息
+                    alert(`编辑${childName}的信息`);
+                } else if (action.includes('fa-trash')) {
+                    // 删除
+                    if (confirm(`确定要删除${childName}的信息吗？`)) {
+                        alert(`${childName}的信息已删除`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+package com.caresync.ai.model.DTO;
+
+import lombok.Data;
+
+/**
+ * 生成帮扶方案请求参数
+ */
+@Data
+public class GenerateSchemeDTO {
+    private Long childId; // 儿童ID
+    private String additionalInfo; // 额外信息（可选）
+}

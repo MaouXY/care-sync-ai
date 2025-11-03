@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮扶方案管理 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <h1 class="text-2xl font-bold text-dark">帮扶方案管理</h1>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
+                        <i class="fa fa-refresh"></i>
+                        <span class="hidden sm:inline-block">刷新</span>
+                    </button>
+                    <button id="generateSchemeBtn" class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-magic"></i>
+                        <span>AI生成方案</span>
+                    </button>
+                </div>
+            </div>
+            <p class="text-neutral mt-1">管理所有儿童的帮扶方案，支持AI生成和人工编辑</p>
+        </div>
+        
+        <!-- 搜索和筛选 -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="relative">
+                    <input type="text" placeholder="搜索方案名称/儿童姓名" 
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                    <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"></i>
+                </div>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有方案状态</option>
+                    <option value="draft">草稿</option>
+                    <option value="pending">待审核</option>
+                    <option value="in-progress">进行中</option>
+                    <option value="completed">已完成</option>
+                    <option value="rejected">已拒绝</option>
+                </select>
+                <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                    <option value="">所有方案类型</option>
+                    <option value="emotional">情感陪伴</option>
+                    <option value="educational">教育支持</option>
+                    <option value="behavioral">行为引导</option>
+                    <option value="family">家庭沟通</option>
+                    <option value="comprehensive">综合帮扶</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">创建日期:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-neutral">至:</label>
+                    <input type="date" class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
+                </div>
+                <div class="flex space-x-2">
+                    <button class="flex-1 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg transition-custom">
+                        筛选
+                    </button>
+                    <button class="flex-1 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg transition-custom">
+                        重置
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 方案列表 -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>序号</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>方案名称</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>儿童</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>方案类型</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>方案状态</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>创建日期</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>预计完成时间</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>负责人</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-neutral uppercase tracking-wider">
+                                操作
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <!-- 方案1 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">1</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小明情感陪伴与心理疏导方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小明 (10岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                    情感陪伴
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    进行中
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-10</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-10</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">李社工</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案2 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小红学习支持与自信心培养方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小红 (12岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
+                                    教育支持
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                    待审核
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-12</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-09-12</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">李社工</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案3 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">3</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小华行为习惯引导与兴趣培养方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小华 (11岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    行为引导
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    草稿
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-14</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-28</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">李社工</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案4 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">4</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小美家庭沟通改善与情感支持方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小美 (9岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    家庭沟通
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success/10 text-success">
+                                    已完成
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-06-20</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">李社工</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- 方案5 -->
+                        <tr class="hover:bg-light transition-custom">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">5</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-dark font-medium">小强综合能力提升与心理建设方案</span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                                        <i class="fa fa-child text-xs"></i>
+                                    </div>
+                                    <span class="text-neutral">小强 (13岁)</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                    综合帮扶
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    已拒绝
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-05</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-08-20</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">李社工</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex justify-end space-x-2">
+                                    <button class="text-primary hover:text-primary/80 transition-custom">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-pencil"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-danger transition-custom">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        上一页
+                    </button>
+                    <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-neutral bg-white hover:bg-gray-50 transition-custom">
+                        下一页
+                    </button>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-neutral">
+                            显示第 <span class="font-medium">1</span> 到 <span class="font-medium">5</span> 条，共 <span class="font-medium">32</span> 条结果
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">上一页</span>
+                                <i class="fa fa-chevron-left text-xs"></i>
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-sm font-medium text-white">
+                                1
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                2
+                            </button>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                3
+                            </button>
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral">
+                                ...
+                            </span>
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                7
+                            </button>
+                            <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-neutral hover:bg-gray-50 transition-custom">
+                                <span class="sr-only">下一页</span>
+                                <i class="fa fa-chevron-right text-xs"></i>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- AI生成方案弹窗 -->
+    <div id="generateSchemeModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-dark">AI生成帮扶方案</h3>
+                <button id="closeGenerateSchemeModal" class="text-neutral hover:text-dark transition-custom">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="generateSchemeForm" class="space-y-6">
+                <div>
+                    <label for="selectChild" class="block text-sm font-medium text-neutral mb-1">选择儿童 <span class="text-danger">*</span></label>
+                    <select id="selectChild" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                        <option value="">请选择儿童</option>
+                        <option value="1">小明 (10岁)</option>
+                        <option value="2">小红 (12岁)</option>
+                        <option value="3">小华 (11岁)</option>
+                        <option value="4">小美 (9岁)</option>
+                        <option value="5">小强 (13岁)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="schemeType" class="block text-sm font-medium text-neutral mb-1">方案类型 <span class="text-danger">*</span></label>
+                    <select id="schemeType" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                        <option value="">请选择方案类型</option>
+                        <option value="emotional">情感陪伴</option>
+                        <option value="educational">教育支持</option>
+                        <option value="behavioral">行为引导</option>
+                        <option value="family">家庭沟通</option>
+                        <option value="comprehensive">综合帮扶</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="schemeDuration" class="block text-sm font-medium text-neutral mb-1">预计周期 <span class="text-danger">*</span></label>
+                    <select id="schemeDuration" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
+                        <option value="">请选择周期</option>
+                        <option value="4">4周</option>
+                        <option value="8">8周</option>
+                        <option value="12">12周</option>
+                        <option value="24">24周</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="specialRequirements" class="block text-sm font-medium text-neutral mb-1">特殊需求/关注点</label>
+                    <textarea id="specialRequirements" rows="3" placeholder="请输入您对该方案的特殊要求或关注点，有助于AI生成更精准的方案..." 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none"></textarea>
+                </div>
+                
+                <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                    <button type="button" id="cancelGenerateScheme" 
+                        class="px-6 py-2 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                        取消
+                    </button>
+                    <button type="submit" 
+                        class="px-6 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow transition-custom">
+                        生成方案
+                    </button>
+                </div>\>\div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 方案生成中弹窗 -->
+    <div id="generatingSchemeModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 text-center">
+            <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
+                <i class="fa fa-cog fa-spin text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-dark mb-2">方案生成中</h3>
+            <p class="text-neutral mb-6">AI正在为您生成个性化帮扶方案，请稍候...</p>
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-xs text-neutral">已完成 0%</p>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const generateSchemeBtn = document.getElementById('generateSchemeBtn');
+        const generateSchemeModal = document.getElementById('generateSchemeModal');
+        const closeGenerateSchemeModal = document.getElementById('closeGenerateSchemeModal');
+        const cancelGenerateScheme = document.getElementById('cancelGenerateScheme');
+        const generateSchemeForm = document.getElementById('generateSchemeForm');
+        const generatingSchemeModal = document.getElementById('generatingSchemeModal');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        // 打开AI生成方案弹窗
+        generateSchemeBtn.addEventListener('click', function() {
+            generateSchemeModal.classList.remove('hidden');
+            // 重置表单
+            generateSchemeForm.reset();
+        });
+        
+        // 关闭AI生成方案弹窗
+        function closeGenerateModal() {
+            generateSchemeModal.classList.add('hidden');
+        }
+        
+        closeGenerateSchemeModal.addEventListener('click', closeGenerateModal);
+        cancelGenerateScheme.addEventListener('click', closeGenerateModal);
+        
+        generateSchemeModal.addEventListener('click', function(e) {
+            if (e.target === generateSchemeModal) {
+                closeGenerateModal();
+            }
+        });
+        
+        // 刷新按钮点击事件
+        refreshBtn.addEventListener('click', function() {
+            // 显示刷新动画
+            this.querySelector('i').classList.add('fa-spin');
+            setTimeout(() => {
+                this.querySelector('i').classList.remove('fa-spin');
+                // 这里可以添加刷新数据的逻辑
+                alert('数据已刷新');
+            }, 1000);
+        });
+        
+        // 模拟进度条更新
+        function simulateProgress() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    // 进度完成后关闭弹窗并显示成功提示
+                    setTimeout(() => {
+                        generatingSchemeModal.classList.add('hidden');
+                        alert('帮扶方案生成成功！');
+                        closeGenerateModal();
+                    }, 500);
+                }
+                progressBar.style.width = progress + '%';
+                progressText.textContent = '已完成 ' + Math.round(progress) + '%';
+            }, 300);
+        }
+        
+        // 表单提交事件
+        generateSchemeForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // 显示生成中弹窗
+            generatingSchemeModal.classList.remove('hidden');
+            
+            // 重置进度条
+            progressBar.style.width = '0%';
+            progressText.textContent = '已完成 0%';
+            
+            // 开始模拟进度
+            setTimeout(simulateProgress, 500);
+        });
+        
+        // 为表格中的操作按钮添加事件
+        document.querySelectorAll('table button').forEach(button => {
+            button.addEventListener('click', function() {
+                const action = this.querySelector('i').className;
+                const schemeName = this.closest('tr').querySelector('.font-medium').textContent;
+                
+                if (action.includes('fa-eye')) {
+                    // 查看详情
+                    alert(`查看帮扶方案：${schemeName}`);
+                } else if (action.includes('fa-pencil')) {
+                    // 编辑方案
+                    alert(`编辑帮扶方案：${schemeName}`);
+                } else if (action.includes('fa-trash')) {
+                    // 删除方案
+                    if (confirm(`确定要删除帮扶方案：${schemeName}吗？`)) {
+                        alert(`帮扶方案已删除`);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

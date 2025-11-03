@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童首页 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        aiMessage: '#EBF4FF',
+                        userMessage: '#E6FFFA'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .message-bubble-left {
+                border-radius: 18px 18px 18px 4px;
+            }
+            .message-bubble-right {
+                border-radius: 18px 18px 4px 18px;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">儿童端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full text-white text-[10px] flex items-center justify-center">3</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-child"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">小明</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="child-login（弃用）.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- 左侧功能导航 -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-xl shadow-md p-4 sticky top-24">
+                    <div class="space-y-1">
+                        <a href="#chat" class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium">
+                            <i class="fa fa-comments text-lg"></i>
+                            <span>AI 聊天</span>
+                        </a>
+                        <a href="#activities" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                            <i class="fa fa-calendar-check-o text-lg"></i>
+                            <span>我的活动</span>
+                        </a>
+                        <a href="#interests" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                            <i class="fa fa-star text-lg"></i>
+                            <span>兴趣爱好</span>
+                        </a>
+                        <a href="#growth" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                            <i class="fa fa-line-chart text-lg"></i>
+                            <span>成长记录</span>
+                        </a>
+                        <a href="#help" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-light text-neutral hover:text-primary transition-custom">
+                            <i class="fa fa-question-circle text-lg"></i>
+                            <span>帮助中心</span>
+                        </a>
+                    </div>
+                    
+                    <!-- 紧急呼叫按钮 -->
+                    <div class="mt-6">
+                        <button class="w-full bg-accent hover:bg-accent/90 text-white font-medium py-3 px-4 rounded-lg shadow transition-custom flex items-center justify-center space-x-2">
+                            <i class="fa fa-bell"></i>
+                            <span>紧急呼叫</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧聊天区域 -->
+            <div class="lg:col-span-3">
+                <div id="chat" class="bg-white rounded-xl shadow-md overflow-hidden h-[calc(100vh-12rem)] flex flex-col">
+                    <!-- 聊天头部 -->
+                    <div class="p-4 border-b border-gray-200">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white">
+                                <i class="fa fa-robot text-lg"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-dark font-semibold">AI 陪伴助手</h2>
+                                <p class="text-xs text-green-500 flex items-center"><i class="fa fa-circle mr-1"></i> 在线</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 聊天内容区域 - 移动端优化 -->
+                    <div class="flex-1 overflow-y-auto p-4 space-y-5" id="chatMessages">
+                        <!-- 欢迎消息 -->
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                <i class="fa fa-robot"></i>
+                            </div>
+                            <div class="max-w-[80%]">
+                                <div class="bg-aiMessage message-bubble-left p-4">
+                                    <p class="text-dark text-base">你好，小明！我是你的AI陪伴助手，今天过得怎么样？有什么想和我分享的吗？</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1">10:30</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户消息 -->
+                        <div class="flex items-start justify-end space-x-4">
+                            <div class="max-w-[80%]">
+                                <div class="bg-userMessage message-bubble-right p-4">
+                                    <p class="text-dark text-base">今天我数学考了95分，老师表扬我了！</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1 text-right">10:32</p>
+                            </div>
+                            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0 mt-1">
+                                <i class="fa fa-child"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- AI回复 -->
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                <i class="fa fa-robot"></i>
+                            </div>
+                            <div class="max-w-[80%]">
+                                <div class="bg-aiMessage message-bubble-left p-4">
+                                    <p class="text-dark text-base">太棒了！数学考95分真的很厉害，这说明你最近学习很努力呢！能告诉我你是怎么做到的吗？</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1">10:33</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 用户消息 -->
+                        <div class="flex items-start justify-end space-x-4">
+                            <div class="max-w-[80%]">
+                                <div class="bg-userMessage message-bubble-right p-4">
+                                    <p class="text-dark text-base">我每天放学后都会复习老师讲的内容，有不懂的地方我会记下来，第二天问老师</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1 text-right">10:35</p>
+                            </div>
+                            <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0 mt-1">
+                                <i class="fa fa-child"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                <i class="fa fa-robot"></i>
+                            </div>
+                            <div class="max-w-[80%]">
+                                <div class="bg-aiMessage message-bubble-left p-4">
+                                    <p class="text-dark text-base">你真的很自律呢！这种学习方法很棒，遇到问题及时解决，复习巩固新知识。继续保持，我相信你会越来越棒的！</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1">10:36</p>
+                            </div>
+                        </div>
+                        
+                        <!-- AI提示 -->
+                        <div class="flex items-start space-x-4">
+                            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                                <i class="fa fa-robot"></i>
+                            </div>
+                            <div class="max-w-[80%]">
+                                <div class="bg-aiMessage message-bubble-left p-4">
+                                    <p class="text-dark text-base">对了，周末有什么计划吗？要不要一起聊聊你想做什么？</p>
+                                </div>
+                                <p class="text-xs text-neutral mt-1">10:37</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 快捷回复建议 -->
+                        <div class="flex flex-wrap gap-2 ml-14">
+                            <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">我周末想去公园玩</button>
+                            <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">我想学画画</button>
+                            <button class="suggestion-btn px-4 py-2 bg-light text-dark text-sm rounded-full hover:bg-gray-200 transition-custom">你能给我讲个故事吗？</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 聊天输入区域 -->
+                    <div class="p-4 border-t border-gray-200">
+                        <div class="flex items-end space-x-2">
+                            <div class="flex-1 relative">
+                                <textarea id="messageInput" rows="1" placeholder="输入消息..." 
+                                    class="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none resize-none transition-custom"></textarea>
+                                <div class="absolute right-2 bottom-2 flex items-center space-x-1 text-neutral">
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-smile-o"></i>
+                                    </button>
+                                    <button class="text-neutral hover:text-primary transition-custom">
+                                        <i class="fa fa-picture-o"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button id="sendMessageBtn" 
+                                class="bg-primary hover:bg-primary/90 text-white p-3 rounded-lg shadow transition-custom transform hover:-translate-y-1 focus:outline-none">
+                                <i class="fa fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 紧急呼叫弹窗 -->
+    <div id="emergencyModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 transform transition-custom scale-95 opacity-0" id="modalContent">
+            <div class="text-center mb-6">
+                <div class="inline-block w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fa fa-exclamation-triangle text-3xl text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-bold text-dark">紧急呼叫</h3>
+                <p class="text-neutral mt-2">请选择您需要帮助的原因</p>
+            </div>
+            <div class="space-y-3 mb-6">
+                <button class="w-full p-3 border border-gray-300 rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-custom flex items-center space-x-3">
+                    <i class="fa fa-medkit text-red-500"></i>
+                    <span>身体不适</span>
+                </button>
+                <button class="w-full p-3 border border-gray-300 rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-custom flex items-center space-x-3">
+                    <i class="fa fa-shield text-red-500"></i>
+                    <span>遇到危险</span>
+                </button>
+                <button class="w-full p-3 border border-gray-300 rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-custom flex items-center space-x-3">
+                    <i class="fa fa-frown-o text-red-500"></i>
+                    <span>心情低落</span>
+                </button>
+                <button class="w-full p-3 border border-gray-300 rounded-lg text-left hover:border-primary hover:bg-primary/5 transition-custom flex items-center space-x-3">
+                    <i class="fa fa-question-circle text-red-500"></i>
+                    <span>其他问题</span>
+                </button>
+            </div>
+            <div class="flex space-x-4">
+                <button id="cancelEmergencyBtn" 
+                    class="flex-1 py-3 px-4 border border-gray-300 rounded-lg text-neutral hover:bg-gray-50 transition-custom">
+                    取消
+                </button>
+                <button id="confirmEmergencyBtn" 
+                    class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-lg shadow transition-custom">
+                    确认呼叫
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const messageInput = document.getElementById('messageInput');
+        const sendMessageBtn = document.getElementById('sendMessageBtn');
+        const chatMessages = document.getElementById('chatMessages');
+        const emergencyModal = document.getElementById('emergencyModal');
+        const modalContent = document.getElementById('modalContent');
+        const cancelEmergencyBtn = document.getElementById('cancelEmergencyBtn');
+        const confirmEmergencyBtn = document.getElementById('confirmEmergencyBtn');
+        const emergencyBtns = document.querySelectorAll('#emergencyModal button:not(#cancelEmergencyBtn):not(#confirmEmergencyBtn)');
+        let selectedEmergencyReason = null;
+        
+        // 监听紧急呼叫按钮点击
+        document.querySelector('button:has(.fa-bell)').addEventListener('click', function() {
+            // 显示弹窗并添加动画
+            emergencyModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        });
+        
+        // 紧急原因选择
+        emergencyBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // 移除其他按钮的选中状态
+                emergencyBtns.forEach(b => {
+                    b.classList.remove('border-primary', 'bg-primary/10');
+                });
+                // 添加当前按钮的选中状态
+                this.classList.add('border-primary', 'bg-primary/10');
+                // 保存选中的原因
+                selectedEmergencyReason = this.querySelector('span').textContent;
+            });
+        });
+        
+        // 关闭紧急呼叫弹窗
+        cancelEmergencyBtn.addEventListener('click', closeEmergencyModal);
+        
+        emergencyModal.addEventListener('click', function(e) {
+            if (e.target === emergencyModal) {
+                closeEmergencyModal();
+            }
+        });
+        
+        function closeEmergencyModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                emergencyModal.classList.add('hidden');
+                selectedEmergencyReason = null;
+                // 重置所有按钮状态
+                emergencyBtns.forEach(btn => {
+                    btn.classList.remove('border-primary', 'bg-primary/10');
+                });
+            }, 300);
+        }
+        
+        // 确认紧急呼叫
+        confirmEmergencyBtn.addEventListener('click', function() {
+            if (!selectedEmergencyReason) {
+                alert('请选择需要帮助的原因');
+                return;
+            }
+            
+            // 模拟发送紧急呼叫
+            alert(`紧急呼叫已发送，原因：${selectedEmergencyReason}，社工老师将尽快联系您`);
+            closeEmergencyModal();
+        });
+        
+        // 自动调整文本框高度
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.scrollHeight > 100) {
+                this.style.height = '100px';
+                this.style.overflowY = 'auto';
+            }
+        });
+        
+        // 发送消息
+        sendMessageBtn.addEventListener('click', sendMessage);
+        
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+            
+            // 获取当前时间
+            const now = new Date();
+            const timeString = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            
+            // 添加用户消息
+            const userMessageHtml = `
+                <div class="flex items-start justify-end space-x-3">
+                    <div class="max-w-[80%]">
+                        <div class="bg-userMessage message-bubble-right p-3">
+                            <p class="text-dark">${message}</p>
+                        </div>
+                        <p class="text-xs text-neutral mt-1 text-right">${timeString}</p>
+                    </div>
+                    <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center text-primary shrink-0 mt-1">
+                        <i class="fa fa-child text-sm"></i>
+                    </div>
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', userMessageHtml);
+            
+            // 清空输入框并重置高度
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            messageInput.style.overflowY = 'hidden';
+            
+            // 滚动到底部
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // 模拟AI回复
+            setTimeout(() => {
+                const aiResponses = [
+                    "我明白你的意思了，这真的很有趣！",
+                    "你说得对，我也这么认为。",
+                    "谢谢你和我分享这些。",
+                    "这听起来很棒，能再和我多说说吗？",
+                    "我很理解你的感受。"
+                ];
+                const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+                
+                const aiMessageHtml = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white shrink-0 mt-1">
+                            <i class="fa fa-robot text-sm"></i>
+                        </div>
+                        <div class="max-w-[80%]">
+                            <div class="bg-aiMessage message-bubble-left p-3">
+                                <p class="text-dark">${randomResponse}</p>
+                            </div>
+                            <p class="text-xs text-neutral mt-1">${timeString}</p>
+                        </div>
+                    </div>
+                `;
+                chatMessages.insertAdjacentHTML('beforeend', aiMessageHtml);
+                
+                // 滚动到底部
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+        
+        // 初始化滚动到底部
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    </script>
+</body>
+</html>

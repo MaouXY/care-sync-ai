@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI分析详情 - CareSync AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4F46E5',
+                        secondary: '#10B981',
+                        accent: '#F97316',
+                        neutral: '#6B7280',
+                        light: '#F3F4F6',
+                        dark: '#1F2937',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-custom {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans bg-light min-h-screen">
+    <!-- 头部导航 -->
+    <header class="bg-white shadow-md py-3 px-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="text-primary font-bold text-xl flex items-center">
+                    <i class="fa fa-heartbeat mr-2 text-accent"></i>
+                    <span>CareSync AI</span>
+                </div>
+                <span class="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">社工端</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="relative text-neutral hover:text-primary transition-custom">
+                    <i class="fa fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-danger rounded-full text-white text-[10px] flex items-center justify-center">5</span>
+                </button>
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 focus:outline-none">
+                        <div class="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user"></i>
+                        </div>
+                        <span class="text-dark font-medium hidden sm:inline-block">李社工</span>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-10">
+                        <div class="py-2">
+                            <a href="social-worker-profile.html" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-user mr-2"></i> 个人中心
+                            </a>
+                            <a href="#" class="block px-4 py-2 text-sm text-neutral hover:bg-light hover:text-primary transition-custom">
+                                <i class="fa fa-cog mr-2"></i> 设置
+                            </a>
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="social-worker-login.html" class="block px-4 py-2 text-sm text-red-500 hover:bg-light transition-custom">
+                                <i class="fa fa-sign-out mr-2"></i> 退出登录
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 面包屑导航 -->
+    <div class="bg-white shadow-sm py-2 px-4">
+        <div class="container mx-auto">
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="social-worker-home.html" class="text-sm text-neutral hover:text-primary transition-custom">
+                            <i class="fa fa-home mr-1"></i> 首页
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="fa fa-chevron-right text-xs text-neutral mx-1"></i>
+                            <a href="social-worker-analysis.html" class="text-sm text-neutral hover:text-primary transition-custom">
+                                AI分析结果
+                            </a>
+                        </div>
+                    </li>
+                    <li aria-current="page">
+                        <div class="flex items-center">
+                            <i class="fa fa-chevron-right text-xs text-neutral mx-1"></i>
+                            <span class="text-sm font-medium text-primary">分析详情</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- 页面标题和操作 -->
+        <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-dark">AI分析详情</h1>
+                    <p class="text-neutral mt-1">查看并编辑AI对儿童心理状态和需求的分析结果</p>
+                </div>
+                <div class="flex items-center space-x-4 mt-4 sm:mt-0">
+                    <button id="editBtn" class="flex items-center space-x-2 border border-primary text-primary hover:bg-primary/5 px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-pencil"></i>
+                        <span>编辑</span>
+                    </button>
+                    <button id="saveBtn" class="flex items-center space-x-2 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg shadow transition-custom hidden">
+                        <i class="fa fa-save"></i>
+                        <span>保存</span>
+                    </button>
+                    <button id="cancelBtn" class="flex items-center space-x-2 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg shadow transition-custom hidden">
+                        <i class="fa fa-times"></i>
+                        <span>取消</span>
+                    </button>
+                    <button id="backBtn" class="flex items-center space-x-2 border border-gray-300 text-neutral hover:bg-gray-50 px-4 py-2 rounded-lg shadow transition-custom">
+                        <i class="fa fa-arrow-left"></i>
+                        <span>返回</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-8">
+            <!-- 分析概览 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">分析概览</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-sm text-neutral mb-1">分析类型</p>
+                        <p class="font-medium text-dark">情感状态分析</p>
+                    </div>
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-sm text-neutral mb-1">分析日期</p>
+                        <p class="font-medium text-dark">2023-07-15</p>
+                    </div>
+                    <div class="bg-light p-4 rounded-lg">
+                        <p class="text-sm text-neutral mb-1">分析范围</p>
+                        <p class="font-medium text-dark">最近30天</p>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-child"></i>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold text-dark">小明</h5>
+                            <p class="text-sm text-neutral">10岁 | ID: CH20230001</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 情绪趋势图 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">情绪趋势分析</h4>
+                <div class="bg-light p-4 rounded-lg">
+                    <div class="w-full h-64">
+                        <canvas id="emotionTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 情感指标分析 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">情感指标分析</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-neutral">情绪稳定性</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-dark editable-value" data-field="emotion_stability">75%</span>
+                                <input type="range" min="0" max="100" value="75" class="editable-input hidden w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-field="emotion_stability_range">
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="emotion-stability-bar bg-primary h-2.5 rounded-full" style="width: 75%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-neutral">焦虑水平</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-dark editable-value" data-field="anxiety_level">35%</span>
+                                <input type="range" min="0" max="100" value="35" class="editable-input hidden w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-field="anxiety_level_range">
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="anxiety-level-bar bg-warning h-2.5 rounded-full" style="width: 35%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-neutral">幸福感</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-dark editable-value" data-field="happiness">65%</span>
+                                <input type="range" min="0" max="100" value="65" class="editable-input hidden w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-field="happiness_range">
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="happiness-bar bg-secondary h-2.5 rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm text-neutral">社交自信</span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm font-medium text-dark editable-value" data-field="social_confidence">45%</span>
+                                <input type="range" min="0" max="100" value="45" class="editable-input hidden w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" data-field="social_confidence_range">
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="social-confidence-bar bg-accent h-2.5 rounded-full" style="width: 45%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关键发现 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">关键发现</h4>
+                <div class="bg-light p-4 rounded-lg space-y-4">
+                    <div class="editable-item" data-id="1">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-lightbulb-o text-accent"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="text-dark editable-text">情绪稳定性较上周提升了15%，表现出更好的情绪调节能力。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">情绪稳定性较上周提升了15%，表现出更好的情绪调节能力。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="2">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-lightbulb-o text-accent"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="text-dark editable-text">焦虑水平有所下降，但在提及学校作业时仍表现出一定压力。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">焦虑水平有所下降，但在提及学校作业时仍表现出一定压力。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="3">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-lightbulb-o text-accent"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="text-dark editable-text">社交互动中的自信心仍然不足，需要更多的鼓励和支持。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">社交互动中的自信心仍然不足，需要更多的鼓励和支持。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="4">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-lightbulb-o text-accent"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="text-dark editable-text">与AI助手的互动频率增加，表明他对这种交流方式感到舒适。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">与AI助手的互动频率增加，表明他对这种交流方式感到舒适。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="addFindingBtn" class="flex justify-center hidden">
+                        <button class="flex items-center space-x-2 text-primary hover:text-primary/80 transition-custom">
+                            <i class="fa fa-plus-circle"></i>
+                            <span>添加发现</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 建议与干预策略 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">建议与干预策略</h4>
+                <div class="bg-light p-4 rounded-lg space-y-4">
+                    <div class="editable-item" data-id="1">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-check-circle text-secondary"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="font-medium text-dark editable-title">继续保持与小明的定期沟通</p>
+                                <input type="text" class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom" value="继续保持与小明的定期沟通">
+                                <p class="text-sm text-neutral mt-1 editable-text">每周安排1-2次简短的交流，关注他的日常感受和需求。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">每周安排1-2次简短的交流，关注他的日常感受和需求。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="2">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-check-circle text-secondary"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="font-medium text-dark editable-title">开展自信心提升活动</p>
+                                <input type="text" class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom" value="开展自信心提升活动">
+                                <p class="text-sm text-neutral mt-1 editable-text">设计一些小明擅长的活动，通过成功体验增强他的自信心。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">设计一些小明擅长的活动，通过成功体验增强他的自信心。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="3">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-check-circle text-secondary"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="font-medium text-dark editable-title">与学校老师保持沟通</p>
+                                <input type="text" class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom" value="与学校老师保持沟通">
+                                <p class="text-sm text-neutral mt-1 editable-text">了解小明在学校的表现，共同制定支持计划。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">了解小明在学校的表现，共同制定支持计划。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="editable-item" data-id="4">
+                        <div class="flex">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <i class="fa fa-check-circle text-secondary"></i>
+                            </div>
+                            <div class="ml-3 flex-1">
+                                <p class="font-medium text-dark editable-title">提供情绪管理技巧指导</p>
+                                <input type="text" class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom" value="提供情绪管理技巧指导">
+                                <p class="text-sm text-neutral mt-1 editable-text">教导小明一些简单的情绪调节方法，帮助他应对压力情境。</p>
+                                <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2">教导小明一些简单的情绪调节方法，帮助他应对压力情境。</textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="addStrategyBtn" class="flex justify-center hidden">
+                        <button class="flex items-center space-x-2 text-primary hover:text-primary/80 transition-custom">
+                            <i class="fa fa-plus-circle"></i>
+                            <span>添加建议</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 历史对比 -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">历史对比</h4>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-light">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                    分析日期
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                    情绪稳定性
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                    焦虑水平
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                    幸福感
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                    社交自信
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm text-dark">75%</span>
+                                        <span class="text-xs text-success">(+15%)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm text-dark">35%</span>
+                                        <span class="text-xs text-success">(-10%)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm text-dark">65%</span>
+                                        <span class="text-xs text-success">(+5%)</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="text-sm text-dark">45%</span>
+                                        <span class="text-xs text-danger">(+0%)</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-08</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">60%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">45%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">60%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">45%</td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-01</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">55%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">50%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">55%</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-dark">40%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- AI结构化数据 (用于展示完整的JSON格式) -->
+            <div class="bg-white rounded-xl shadow-md p-6">
+                <h4 class="text-lg font-semibold text-dark mb-4">AI结构化数据</h4>
+                <div class="bg-light p-4 rounded-lg">
+                    <div class="editable-json-container">
+                        <pre class="text-sm text-dark overflow-x-auto editable-json-text">{
+  "emotion_trend": ["孤独", "平静", "开心"],
+  "core_needs": ["故事陪伴", "学习辅导"],
+  "potential_problems": ["沟通较少"],
+  "description": "该儿童存在孤独感，沟通较少，核心需求为故事陪伴, 学习辅导",
+  "latest_analysis": "2023-07-15 15:30:00",
+  "emotion_scores": {
+    "情绪稳定性": 75,
+    "焦虑水平": 35,
+    "幸福感": 65,
+    "社交自信": 45
+  },
+  "key_findings": [
+    "情绪稳定性较上周提升了15%，表现出更好的情绪调节能力。",
+    "焦虑水平有所下降，但在提及学校作业时仍表现出一定压力。",
+    "社交互动中的自信心仍然不足，需要更多的鼓励和支持。",
+    "与AI助手的互动频率增加，表明他对这种交流方式感到舒适。"
+  ],
+  "recommendations": [
+    {
+      "title": "继续保持与小明的定期沟通",
+      "description": "每周安排1-2次简短的交流，关注他的日常感受和需求。"
+    },
+    {
+      "title": "开展自信心提升活动",
+      "description": "设计一些小明擅长的活动，通过成功体验增强他的自信心。"
+    },
+    {
+      "title": "与学校老师保持沟通",
+      "description": "了解小明在学校的表现，共同制定支持计划。"
+    },
+    {
+      "title": "提供情绪管理技巧指导",
+      "description": "教导小明一些简单的情绪调节方法，帮助他应对压力情境。"
+    }
+  ]
+}</pre>
+                        <textarea class="editable-input hidden w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none h-96" id="jsonEditor"></textarea>
+                        <div class="mt-2 text-xs text-neutral text-right hidden" id="jsonValidationMsg">
+                            JSON格式正确
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 获取DOM元素
+        const editBtn = document.getElementById('editBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const backBtn = document.getElementById('backBtn');
+        const addFindingBtn = document.getElementById('addFindingBtn');
+        const addStrategyBtn = document.getElementById('addStrategyBtn');
+        const jsonEditor = document.getElementById('jsonEditor');
+        const jsonValidationMsg = document.getElementById('jsonValidationMsg');
+        const editableTexts = document.querySelectorAll('.editable-text');
+        const editableTitles = document.querySelectorAll('.editable-title');
+        const editableValues = document.querySelectorAll('.editable-value');
+        const editableInputs = document.querySelectorAll('.editable-input');
+        const editableJsonText = document.querySelector('.editable-json-text');
+        
+        let isEditMode = false;
+        let originalData = {}; // 用于存储原始数据，以便取消编辑时恢复
+        
+        // 初始化图表
+        function initEmotionTrendChart() {
+            // 检查图表是否已存在
+            if (window.emotionChart) {
+                window.emotionChart.destroy();
+            }
+            
+            const ctx = document.getElementById('emotionTrendChart').getContext('2d');
+            
+            window.emotionChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['7/1', '7/3', '7/5', '7/7', '7/9', '7/11', '7/13', '7/15'],
+                    datasets: [
+                        {
+                            label: '情绪稳定性',
+                            data: [55, 58, 60, 59, 62, 65, 70, 75],
+                            borderColor: '#4F46E5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: '焦虑水平',
+                            data: [50, 48, 47, 46, 47, 45, 40, 35],
+                            borderColor: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: '幸福感',
+                            data: [55, 56, 57, 58, 59, 60, 62, 65],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 切换编辑模式
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            
+            if (isEditMode) {
+                // 进入编辑模式
+                editBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+                cancelBtn.classList.remove('hidden');
+                addFindingBtn.classList.remove('hidden');
+                addStrategyBtn.classList.remove('hidden');
+                
+                // 存储原始数据
+                originalData.json = editableJsonText.textContent;
+                
+                // 显示编辑控件
+                editableTexts.forEach(text => text.classList.add('hidden'));
+                editableTitles.forEach(title => title.classList.add('hidden'));
+                editableValues.forEach(value => value.classList.add('hidden'));
+                editableInputs.forEach(input => input.classList.remove('hidden'));
+                editableJsonText.classList.add('hidden');
+                jsonEditor.classList.remove('hidden');
+                jsonValidationMsg.classList.remove('hidden');
+                
+                // 初始化JSON编辑器内容
+                jsonEditor.value = editableJsonText.textContent;
+                validateJson();
+                
+                // 为范围输入添加事件监听
+                document.querySelectorAll('input[type="range"]').forEach(range => {
+                    range.addEventListener('input', function() {
+                        const field = this.dataset.field;
+                        const value = this.value;
+                        
+                        // 更新显示值
+                        if (field === 'emotion_stability_range') {
+                            document.querySelector('.emotion-stability-bar').style.width = value + '%';
+                        } else if (field === 'anxiety_level_range') {
+                            document.querySelector('.anxiety-level-bar').style.width = value + '%';
+                        } else if (field === 'happiness_range') {
+                            document.querySelector('.happiness-bar').style.width = value + '%';
+                        } else if (field === 'social_confidence_range') {
+                            document.querySelector('.social-confidence-bar').style.width = value + '%';
+                        }
+                    });
+                });
+                
+            } else {
+                // 退出编辑模式
+                editBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+                cancelBtn.classList.add('hidden');
+                addFindingBtn.classList.add('hidden');
+                addStrategyBtn.classList.add('hidden');
+                
+                // 隐藏编辑控件
+                editableTexts.forEach(text => text.classList.remove('hidden'));
+                editableTitles.forEach(title => title.classList.remove('hidden'));
+                editableValues.forEach(value => value.classList.remove('hidden'));
+                editableInputs.forEach(input => input.classList.add('hidden'));
+                editableJsonText.classList.remove('hidden');
+                jsonEditor.classList.add('hidden');
+                jsonValidationMsg.classList.add('hidden');
+            }
+        }
+        
+        // 验证JSON格式
+        function validateJson() {
+            try {
+                JSON.parse(jsonEditor.value);
+                jsonValidationMsg.textContent = 'JSON格式正确';
+                jsonValidationMsg.classList.remove('text-danger');
+                jsonValidationMsg.classList.add('text-success');
+                saveBtn.disabled = false;
+                return true;
+            } catch (e) {
+                jsonValidationMsg.textContent = 'JSON格式错误: ' + e.message;
+                jsonValidationMsg.classList.remove('text-success');
+                jsonValidationMsg.classList.add('text-danger');
+                saveBtn.disabled = true;
+                return false;
+            }
+        }
+        
+        // 保存修改
+        function saveChanges() {
+            // 验证JSON
+            if (!validateJson()) {
+                alert('JSON格式错误，请修正后再保存');
+                return;
+            }
+            
+            // 获取表单数据
+            const formData = {
+                emotion_stability: document.querySelector('input[data-field="emotion_stability_range"]').value,
+                anxiety_level: document.querySelector('input[data-field="anxiety_level_range"]').value,
+                happiness: document.querySelector('input[data-field="happiness_range"]').value,
+                social_confidence: document.querySelector('input[data-field="social_confidence_range"]').value,
+                json_data: jsonEditor.value
+            };
+            
+            // 在实际应用中，这里会发送API请求保存数据
+            console.log('保存的数据:', formData);
+            
+            // 模拟保存成功
+            alert('分析结果已成功更新！');
+            
+            // 切换回查看模式
+            toggleEditMode();
+            
+            // 更新JSON显示
+            editableJsonText.textContent = jsonEditor.value;
+            
+            // 更新图表数据
+            initEmotionTrendChart();
+        }
+        
+        // 取消编辑
+        function cancelEdit() {
+            if (isEditMode && confirm('确定要放弃未保存的修改吗？')) {
+                // 恢复原始数据
+                jsonEditor.value = originalData.json;
+                
+                // 切换回查看模式
+                toggleEditMode();
+            }
+        }
+        
+        // 返回列表页面
+        function goBack() {
+            if (isEditMode) {
+                if (confirm('您有未保存的修改，确定要离开吗？')) {
+                    window.location.href = 'social-worker-analysis.html';
+                }
+            } else {
+                window.location.href = 'social-worker-analysis.html';
+            }
+        }
+        
+        // 添加事件监听
+        editBtn.addEventListener('click', toggleEditMode);
+        saveBtn.addEventListener('click', saveChanges);
+        cancelBtn.addEventListener('click', cancelEdit);
+        backBtn.addEventListener('click', goBack);
+        jsonEditor.addEventListener('input', validateJson);
+        
+        // 添加发现按钮点击事件
+        addFindingBtn.addEventListener('click', function() {
+            const findingsContainer = this.parentElement;
+            const newFindingId = findingsContainer.querySelectorAll('.editable-item').length + 1;
+            
+            const newFinding = document.createElement('div');
+            newFinding.className = 'editable-item';
+            newFinding.dataset.id = newFindingId;
+            newFinding.innerHTML = `
+                <div class="flex">
+                    <div class="flex-shrink-0 pt-0.5">
+                        <i class="fa fa-lightbulb-o text-accent"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="text-dark editable-text hidden"></p>
+                        <textarea class="editable-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2" placeholder="请输入新的发现..."></textarea>
+                    </div>
+                </div>
+            `;
+            
+            findingsContainer.insertBefore(newFinding, this);
+        });
+        
+        // 添加策略按钮点击事件
+        addStrategyBtn.addEventListener('click', function() {
+            const strategiesContainer = this.parentElement;
+            const newStrategyId = strategiesContainer.querySelectorAll('.editable-item').length + 1;
+            
+            const newStrategy = document.createElement('div');
+            newStrategy.className = 'editable-item';
+            newStrategy.dataset.id = newStrategyId;
+            newStrategy.innerHTML = `
+                <div class="flex">
+                    <div class="flex-shrink-0 pt-0.5">
+                        <i class="fa fa-check-circle text-secondary"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        <p class="font-medium text-dark editable-title hidden"></p>
+                        <input type="text" class="editable-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom" placeholder="建议标题">
+                        <p class="text-sm text-neutral mt-1 editable-text hidden"></p>
+                        <textarea class="editable-input w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none" rows="2" placeholder="建议描述"></textarea>
+                    </div>
+                </div>
+            `;
+            
+            strategiesContainer.insertBefore(newStrategy, this);
+        });
+        
+        // 初始化图表
+        window.addEventListener('load', initEmotionTrendChart);
+    </script>
+</body>
+</html>
