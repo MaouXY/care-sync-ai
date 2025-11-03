@@ -22,7 +22,7 @@ import java.util.List;
  * 儿童模块控制器
  */
 @RestController
-@RequestMapping("/child")
+@RequestMapping("/api/child")
 @Tag(name = "儿童模块接口", description = "儿童用户相关接口")
 public class ChildController {
 

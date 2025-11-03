@@ -1,6 +1,7 @@
 # CareSync AI 项目规则
 
 ## 0.文档地址
+src/main/resources/static/html中的html文件是产品原型，展示了项目的功能界面。
 resources/md中的是我编写的项目文档，包含项目概述、技术栈、项目架构、数据库设计、接口文档等。
 
 ## 1. 项目概述

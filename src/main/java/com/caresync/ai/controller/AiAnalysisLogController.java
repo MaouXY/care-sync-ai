@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 2025-11-02
  */
 @RestController
-@RequestMapping("/ai-analysis-log")
+@RequestMapping("/api/social-worker/ai-analysis")
 public class AiAnalysisLogController {
 
 }
