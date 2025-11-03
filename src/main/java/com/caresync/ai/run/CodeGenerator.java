@@ -28,7 +28,7 @@ public class CodeGenerator {
 
         // 生成代码的包路径 - 适配当前项目结构
         String parentPackage = "com.caresync.ai";
-        String entityPackage = "com.caresync.ai.model.entity";
+        String entityPackage = "model.entity";
 
         // 输出目录 - 适配当前项目结构
         String projectPath = System.getProperty("user.dir");
@@ -55,7 +55,7 @@ public class CodeGenerator {
                 // 策略配置
                 .strategyConfig(builder -> {
                     // 设置需要生成的表名 - 适配care_sync_db数据库中的表
-                    builder.addInclude("child", "ai_chat_record", "ai_assist_scheme", "assist_track_log", "ai_analysis_log", "social_worker")
+                    builder.addInclude("simulation_scenario","training_session","training_chat_record","training_evaluation")
                             // 实体类策略配置
                             // 添加文件覆盖配置
                             .entityBuilder()
