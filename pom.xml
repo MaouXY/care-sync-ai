@@ -135,6 +135,13 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
             <version>3.1.2</version>
         </dependency>
+
+        <!-- 引入火山方舟SDK依赖 -->
+        <dependency>
+            <groupId>com.volcengine</groupId>
+            <artifactId>volcengine-java-sdk-ark-runtime</artifactId>
+            <version>0.2.36</version>
+        </dependency>
     </dependencies>
 
     <build>

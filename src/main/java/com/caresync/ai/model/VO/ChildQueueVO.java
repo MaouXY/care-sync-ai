@@ -6,17 +6,17 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 儿童信息响应结果
+ * 儿童列表分页响应结果
  */
 @Data
-public class ChildInfoVO implements Serializable {
+public class ChildQueueVO implements Serializable {
+    private static final long serialVersionUID = 1L;
+    
     private Long id;
     private String childNo;
     private String name;
     private Integer age;
     private Boolean hasNewChat;
-    private Object aiStructInfo;
-    private LocalDateTime aiAnalysisTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

@@ -32,6 +32,9 @@ public class AssistTrackLog extends Model<AssistTrackLog> {
     @TableField("scheme_id")
     private Long schemeId;
 
+    @TableField("child_id")
+    private Long childId;
+
     @TableField("worker_id")
     private Long workerId;
 

@@ -1,11 +1,17 @@
 package com.caresync.ai.model.DTO;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 儿童列表查询请求参数
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class ChildQueryDTO {
     private String childNo; // 儿童登录ID（模糊查询）
     private String name; // 儿童姓名（模糊查询）

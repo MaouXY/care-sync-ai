@@ -1,6 +1,9 @@
 package com.caresync.ai.controller;
 
-import com.caresync.ai.model.DTO.*;
+import com.caresync.ai.model.DTO.ChangeSchemeStatusDTO;
+import com.caresync.ai.model.DTO.GenerateSchemeDTO;
+import com.caresync.ai.model.DTO.SchemeQueryDTO;
+import com.caresync.ai.model.DTO.UpdateSchemeDTO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.result.Result;
@@ -92,6 +95,69 @@ public class AiAssistSchemeController {
     @PutMapping("/status/{id}")
     @Operation(summary = "修改方案状态", description = "切换服务方案的状态")
     public Result changeSchemeStatus(@PathVariable Long id, @RequestParam String status) {
+        // 暂时返回成功，不实现具体业务逻辑
+        return Result.success();
+    }
+
+    // ========== 管理视角接口 ==========
+    
+    /**
+     * 获取服务方案列表（管理视角）
+     * @param schemeQueryDTO 查询条件
+     * @return 分页结果
+     */
+    @GetMapping("/manage/list")
+    @Operation(summary = "获取服务方案列表（管理视角）", description = "分页查询服务方案列表（支持按儿童ID、社工ID、状态筛选）")
+    public Result<PageResult<AssistSchemeVO>> getSchemeListManage(SchemeQueryDTO schemeQueryDTO) {
+        // 暂时返回成功，不实现具体业务逻辑
+        return Result.success();
+    }
+
+    /**
+     * 获取服务方案详情（管理视角）
+     * @param id 方案ID
+     * @return 服务方案VO
+     */
+    @GetMapping("/manage/detail/{id}")
+    @Operation(summary = "获取服务方案详情（管理视角）", description = "根据ID获取服务方案详情（管理视角）")
+    public Result<AssistSchemeVO> getSchemeDetailManage(@PathVariable Long id) {
+        // 暂时返回成功，不实现具体业务逻辑
+        return Result.success();
+    }
+
+    /**
+     * 更新服务方案（管理视角）
+     * @param id 方案ID
+     * @param updateSchemeDTO 更新方案DTO
+     * @return 结果
+     */
+    @PutMapping("/manage/update/{id}")
+    @Operation(summary = "更新服务方案（管理视角）", description = "更新服务方案内容（管理视角）")
+    public Result updateSchemeManage(@PathVariable Long id, @RequestBody UpdateSchemeDTO updateSchemeDTO) {
+        // 暂时返回成功，不实现具体业务逻辑
+        return Result.success();
+    }
+
+    /**
+     * 修改方案状态（管理视角）
+     * @param changeSchemeStatusDTO 状态变更DTO
+     * @return 结果
+     */
+    @PostMapping("/manage/change-status")
+    @Operation(summary = "修改方案状态（管理视角）", description = "修改服务方案的状态（管理视角）")
+    public Result changeSchemeStatusManage(@RequestBody ChangeSchemeStatusDTO changeSchemeStatusDTO) {
+        // 暂时返回成功，不实现具体业务逻辑
+        return Result.success();
+    }
+
+    /**
+     * 生成AI服务方案（管理视角）
+     * @param generateSchemeDTO 生成方案DTO
+     * @return 服务方案VO
+     */
+    @PostMapping("/manage/generate")
+    @Operation(summary = "生成AI服务方案（管理视角）", description = "一键生成AI服务方案（管理视角）")
+    public Result<AssistSchemeVO> generateSchemeManage(@RequestBody GenerateSchemeDTO generateSchemeDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
     }

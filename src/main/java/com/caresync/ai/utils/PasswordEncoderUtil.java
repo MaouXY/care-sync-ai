@@ -1,5 +1,6 @@
 package com.caresync.ai.utils;
 
+import lombok.Data;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -8,12 +9,12 @@ import org.springframework.util.DigestUtils;
 /**
  * 密码编码器，用于对密码进行加密存储和验证
  */
+@Data
 @Component
 public class PasswordEncoderUtil {
     @Value("${password.secret}")
-    private String secret;
+    private static String secret;
 
-    @Getter
     @Value("${password.default-password}")
     private String defaultPassword;
 
@@ -22,7 +23,7 @@ public class PasswordEncoderUtil {
      * @param password 原始密码
      * @return 加密后的密码
      */
-    public String encode(String password) {
+    public static String encode(String password) {
         return DigestUtils.md5DigestAsHex((password + secret).getBytes());
     }
 

@@ -1,6 +1,7 @@
 package com.caresync.ai.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.caresync.ai.config.JwtConfig;
 import com.caresync.ai.constant.CodeConstant;
 import com.caresync.ai.constant.JwtClaimsConstant;
@@ -8,11 +9,14 @@ import com.caresync.ai.constant.MessageConstant;
 import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.exception.BusinessException;
 import com.caresync.ai.model.DTO.ChildLoginDTO;
+import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
+import com.caresync.ai.model.VO.ChildQueueVO;
 import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.ChildMapper;
+import com.caresync.ai.result.PageResult;
 import com.caresync.ai.service.IChildService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.utils.JwtUtil;
@@ -21,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,6 +42,12 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     @Autowired
     private JwtConfig jwtConfig;
 
+    /*####################儿童端####################*/
+    /**
+     * 儿童登录
+     * @param childLoginDTO 儿童登录参数
+     * @return 登录响应结果
+     */
     @Override
     public LoginVO login(ChildLoginDTO childLoginDTO) {
         String childNo = childLoginDTO.getChildNo();
@@ -69,6 +80,11 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         return loginVO;
     }
 
+    /**
+     * 获取儿童信息
+     * @param id 儿童ID
+     * @return 儿童信息VO
+     */
     @Override
     public ChildInfoVO getChildInfo(Long id) {
         Child child = this.getById(id);
@@ -81,6 +97,10 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         return childInfoVO;
     }
 
+    /**
+     * 更新儿童信息
+     * @param updateChildInfoDTO 更新儿童信息参数
+     */
     @Override
     public void updateChildInfo(UpdateChildInfoDTO updateChildInfoDTO) {
         Child child = new Child();
@@ -92,9 +112,79 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         }
     }
 
+    /**
+     * 儿童注销登录
+     */
     @Override
     public void logout() {
         // 清除ThreadLocal中的用户信息
         BaseContext.clear();
+    }
+
+    /*####################社工端####################*/
+    /**
+     * 获取儿童列表
+     * @param childQueryDTO 儿童查询参数
+     * @return 分页结果
+     */
+    @Override
+    public PageResult<ChildQueueVO> getChildList(ChildQueryDTO childQueryDTO) {
+        // 构建分页对象
+        Page<Child> page = new Page<>(childQueryDTO.getPage(), childQueryDTO.getPageSize());
+
+        // 调用方法构建查询条件
+        LambdaQueryWrapper<Child> queryWrapper = buildChildQueryWrapper(childQueryDTO);
+
+        // 执行分页查询
+        Page<Child> childPage = this.page(page, queryWrapper);
+
+        // 转换为ChildQueueVO列表
+        List<ChildQueueVO> childQueueVOList = childPage.getRecords().stream().map(child -> {
+            ChildQueueVO childQueueVO = new ChildQueueVO();
+            BeanUtils.copyProperties(child, childQueueVO);
+            return childQueueVO;
+        }).collect(java.util.stream.Collectors.toList());
+
+        // 构建并返回分页结果
+        return new PageResult<>(childPage.getTotal(), childQueueVOList);
+    }
+
+    /**
+     * 构建儿童查询条件
+     * @param childQueryDTO 查询条件DTO
+     * @return 查询条件包装器
+     */
+    private LambdaQueryWrapper<Child> buildChildQueryWrapper(ChildQueryDTO childQueryDTO) {
+        LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
+        
+        // 儿童编号模糊查询
+        if (childQueryDTO.getChildNo() != null) {
+            queryWrapper.like(Child::getChildNo, childQueryDTO.getChildNo());
+        }
+        
+        // 儿童姓名模糊查询
+        if (childQueryDTO.getName() != null) {
+            queryWrapper.like(Child::getName, childQueryDTO.getName());
+        }
+        
+        // 最小年龄查询
+        if (childQueryDTO.getMinAge() != null) {
+            queryWrapper.ge(Child::getAge, childQueryDTO.getMinAge());
+        }
+        
+        // 最大年龄查询
+        if (childQueryDTO.getMaxAge() != null) {
+            queryWrapper.le(Child::getAge, childQueryDTO.getMaxAge());
+        }
+        
+        // 是否有新聊天记录查询
+        if (childQueryDTO.getHasNewChat() != null) {
+            queryWrapper.eq(Child::getHasNewChat, childQueryDTO.getHasNewChat());
+        }
+        
+        // 按创建时间倒序排序
+        queryWrapper.orderByDesc(Child::getCreateTime);
+        
+        return queryWrapper;
     }
 }

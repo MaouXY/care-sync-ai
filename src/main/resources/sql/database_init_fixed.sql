@@ -46,18 +46,18 @@ CREATE INDEX idx_child_social_worker_id ON child(social_worker_id); -- 优化社
 CREATE INDEX idx_child_service_status ON child(service_status); -- 优化服务状态筛选
 CREATE INDEX idx_child_risk_level ON child(risk_level); -- 优化风险等级筛选
 
--- ai_struct_info扩展结构示例（适配AI分析结果展示页）TODO 去除 分析类型 分析状态 改成显示 potential_problems 和 emotion_trend 还需要固定化一下有哪些tag好对应颜色
+-- ai_struct_info扩展结构示例（适配AI分析结果展示页）
 -- {
 --   "emotion_trend": [
 --     "孤独",
 --     "平静",
 --     "开心"
---   ], -- 情感趋势标签（对应图表X轴）TODO 在儿童列表-就展示，但现在并未使用
+--   ], -- 情感趋势标签（对应图表X轴）
 --   "core_needs": [
 --     "故事陪伴",
 --     "学习辅导"
 --   ], -- 核心需求标签（展示在摘要卡片）TODO 在儿童详情列表-就展示，但现在并未使用
---   "potential_problems": "沟通较少", -- 潜在问题标签（红色预警展示）TODO 在儿童列-就展示，但现在并未使用
+--   "potential_problems": "沟通较少", -- 潜在问题标签（红色预警展示）
 --   "description": "该儿童存在孤独感，沟通较少，核心需求为故事陪伴, 学习辅导", -- 分析摘要（综合描述）
 --   "latest_analysis": "2023-07-15 15:30:00", -- 最新分析时间（页面右上角标注）
 --   "emotion_scores": {
@@ -135,6 +135,51 @@ CREATE INDEX idx_child_risk_level ON child(risk_level); -- 优化风险等级筛
 --   "teacher_comments": "上课注意力有时不集中"
 -- }
 
+-- 插入示例儿童数据
+INSERT INTO child (child_no, social_worker_id, service_status, risk_level, name, age, gender, birth_date, id_card, address, notes, phone, guardian_name, guardian_phone, verify_code, has_new_chat, ai_struct_info, ai_analysis_time)
+VALUES (
+           'CHILD2024001',
+           1,
+           '服务中',
+           '低风险',
+           '张明',
+           8,
+           '男',
+           '2016-05-15',
+           '110101201605151234',
+           '北京市海淀区中关村南大街5号',
+           '性格开朗，喜欢数学和编程',
+           '13811112222',
+           '张建国',
+           '13911113333',
+           '1234',
+           TRUE,
+           '{"emotion_trend":["平静","开心","兴奋"],"core_needs":["编程学习","数学挑战"],"potential_problems":null,"description":"该儿童性格开朗，情绪稳定，核心需求为编程学习和数学挑战","latest_analysis":"2024-05-15 10:30:00","emotion_scores":{"情绪稳定性":90,"焦虑水平":15,"幸福感":85,"社交自信":80},"emotion_history":[{"date":"2024-05-15","scores":{"情绪稳定性":90,"焦虑水平":15,"幸福感":85,"社交自信":80}},{"date":"2024-05-08","scores":{"情绪稳定性":85,"焦虑水平":20,"幸福感":80,"社交自信":75}},{"date":"2024-05-01","scores":{"情绪稳定性":80,"焦虑水平":25,"幸福感":75,"社交自信":70}}],"key_findings":["情绪状态良好，表现出积极乐观的心态","对编程和数学表现出浓厚兴趣，学习能力强","社交互动积极，能够主动与人交流"],"recommendations":[{"title":"提供编程学习资源","description":"推荐适合该年龄段的编程入门课程和书籍","priority":"high"},{"title":"设置数学挑战任务","description":"根据兴趣设计一些有趣的数学问题，激发学习热情","priority":"medium"}]}',
+           '2024-05-15 10:30:00'
+       );
+
+INSERT INTO child (child_no, social_worker_id, service_status, risk_level, name, age, gender, birth_date, id_card, address, notes, phone, guardian_name, guardian_phone, verify_code, has_new_chat, ai_struct_info, ai_analysis_time)
+VALUES (
+           'CHILD2024002',
+           1,
+           '服务中',
+           '中风险',
+           '李华',
+           10,
+           '女',
+           '2014-08-20',
+           '110101201408205678',
+           '北京市朝阳区建国路88号',
+           '性格内向，需要情感陪伴',
+           '13711114444',
+           '李红',
+           '13611115555',
+           '5678',
+           TRUE,
+           '{"emotion_trend": ["孤独","平静","低落"],"core_needs":["情感陪伴","艺术表达"],"potential_problems":"沟通较少，情绪波动","description":"该儿童性格内向，存在孤独感，沟通较少，核心需求为情感陪伴和艺术表达","latest_analysis":"2024-05-15 11:00:00","emotion_scores":{"情绪稳定性":60,"焦虑水平":45,"幸福感":55,"社交自信":40},"emotion_history":[{"date":"2024-05-15","scores":{"情绪稳定性":60,"焦虑水平":45,"幸福感":55,"社交自信":40}},{"date":"2024-05-08","scores":{"情绪稳定性":55,"焦虑水平":50,"幸福感":50,"社交自信":35}},{"date":"2024-05-01","scores":{"情绪稳定性":50,"焦虑水平":55,"幸福感":45,"社交自信":30}}],"key_findings":["情绪稳定性有待提升，容易出现情绪波动","社交互动中的自信心不足，需要更多鼓励和支持","对绘画和音乐表现出浓厚兴趣，可作为情感表达的途径"],"recommendations":[{"title":"建立定期陪伴机制","description":"每周安排固定时间进行情感陪伴，建立稳定的信任关系","priority":"high"},{"title":"鼓励艺术表达","description":"提供绘画和音乐相关的材料和活动，引导情感表达","priority":"medium"},{"title":"自信心提升训练","description":"通过小任务成功体验，逐步提升社交自信心","priority":"medium"}]}',
+           '2024-05-15 11:00:00'
+       );
+
 -- 4. 创建AI聊天记录表（ai_chat_record）
 CREATE TABLE ai_chat_record (
                                 id BIGSERIAL PRIMARY KEY,
@@ -163,11 +208,11 @@ CREATE TABLE ai_assist_scheme (
                                   child_id BIGINT NOT NULL, -- 关联儿童ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID
                                   target VARCHAR(200) NOT NULL, -- 服务目标（如"缓解孤独感"）
-                                  measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
+                                  measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 目标（最多3条）多余了
                                   cycle INT DEFAULT 7, -- 周期（默认1周）
                                   scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
-                                  ai_suggestions JSONB NOT NULL, -- AI原始建议（含目标、措施、依据）
-                                  worker_adjust_reason TEXT, -- 社工调整理由
+                                  ai_suggestions JSONB NOT NULL, -- AI建议（含目标、措施、依据）
+                                  worker_adjust_reason TEXT, -- 预留： 社工调整理由
                                   ai_analysis_id BIGINT, -- 关联AI分析记录ID
                                   evaluation_index JSONB, -- 预留：评估指标
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -195,39 +240,39 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 --     {
 --       "week": "建立信任关系",
 --       "details": [
---         {"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "completed"},
---         {"content": "一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "status": "completed"},
---         {"content": "与小明约定每周固定的见面时间，增加安全感。", "status": "in_progress"}
+--         {"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "completed","assist_track_log_id":1},
+--         {"content": "一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "status": "completed","assist_track_log_id":2},
+--         {"content": "与小明约定每周固定的见面时间，增加安全感。", "status": "in_progress","assist_track_log_id":3}
 --       ]
 --     },
 --     {
 --       "week": "情绪识别与表达",
 --       "details": [
---         {"content": "通过情绪卡片游戏，帮助小明识别不同的情绪。", "status": "pending"},
---         {"content": "引导小明用绘画的方式表达自己的内心感受。", "status": "pending"},
---         {"content": "教授简单的情绪调节方法，如深呼吸、倾诉等。", "status": "pending"}
+--         {"content": "通过情绪卡片游戏，帮助小明识别不同的情绪。", "status": "pending","assist_track_log_id":4},
+--         {"content": "引导小明用绘画的方式表达自己的内心感受。", "status": "pending","assist_track_log_id":5},
+--         {"content": "教授简单的情绪调节方法，如深呼吸、倾诉等。", "status": "pending","assist_track_log_id":6}
 --       ]
 --     },
 --     {
 --       "week": "社交技能培养",
 --       "details": [
---         {"content": "组织小组活动，鼓励小明与其他小朋友互动。", "status": "pending"},
---         {"content": "角色扮演练习，学习如何与他人友好沟通。", "status": "pending"},
---         {"content": "分享正面社交经验，增强小明的自信心。", "status": "pending"}
+--         {"content": "组织小组活动，鼓励小明与其他小朋友互动。", "status": "pending","assist_track_log_id":7},
+--         {"content": "角色扮演练习，学习如何与他人友好沟通。", "status": "pending","assist_track_log_id":8},
+--         {"content": "分享正面社交经验，增强小明的自信心。", "status": "pending","assist_track_log_id":9}
 --       ]
 --     },
 --     {
 --       "week": "总结与展望",
 --       "details": [
---         {"content": "回顾四周的变化，肯定小明的进步。", "status": "pending"},
---         {"content": "共同制定后续计划，帮助小明保持积极状态。", "status": "pending"},
---         {"content": "与家长沟通，分享小明的成长和需要继续关注的方面。", "status": "pending"}
+--         {"content": "回顾四周的变化，肯定小明的进步。", "status": "pending","assist_track_log_id":10},
+--         {"content": "共同制定后续计划，帮助小明保持积极状态。", "status": "pending","assist_track_log_id":11},
+--         {"content": "与家长沟通，分享小明的成长和需要继续关注的方面。", "status": "pending","assist_track_log_id":12}
 --       ]
 --     }
 --   ]
 -- }
 
-
+-- ai_suggestions{"target_suggest": ["降低孤独焦虑，建立积极心态","增强情绪管理，正确表达感受","提升社交能力，改善人际沟通"],"measures_suggest": [{"week": "建立信任关系","details": [{"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "pending","assist_track_log_id":1},{"content": "一起参与小明感兴趣的活动，建立初步信任。", "status": "pending","assist_track_log_id":2}]},{"week": "情绪识别与表达","details": [{"content": "通过情绪卡片游戏，帮助小明识别不同的情绪。", "status": "pending","assist_track_log_id":3},{"content": "引导小明用绘画的方式表达自己的内心感受。", "status": "pending","assist_track_log_id":4}]}]}
 
 -- evaluation_index结构示例（适配进度跟踪页面）
 -- {
@@ -259,13 +304,14 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 --   ] -- 里程碑（时间线展示）
 -- }
 
--- 6. 创建AI服务进度日志表（assist_track_log）
+-- 6. 创建AI服务进度日志表（assist_track_log）记录子任务完成情况
 CREATE TABLE assist_track_log (
                                   id BIGSERIAL PRIMARY KEY, -- 日志ID
                                   scheme_id BIGINT NOT NULL, -- 关联服务方案ID
+                                  child_id BIGINT NOT NULL, -- 关联儿童ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID（记录人）
                                   week INT NOT NULL, -- 服务周次（如"第1周""第2周"）
-                                  completion_status VARCHAR(20) NOT NULL, -- 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
+                                  completion_status VARCHAR(20) NOT NULL, -- 完成状态：pending(待处理)/in_progress(进行中)/completed(已完成)
                                   record_content TEXT NOT NULL, -- 记录内容（如"已完成1次电话沟通"）
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -273,9 +319,10 @@ CREATE TABLE assist_track_log (
                                   FOREIGN KEY (scheme_id) REFERENCES ai_assist_scheme(id) ON DELETE CASCADE,
                                   FOREIGN KEY (worker_id) REFERENCES social_worker(id) ON DELETE CASCADE
 );
--- 索引：优化社工查询方案进度、周次筛选
+-- 索引：优化社工查询方案进度、周次、儿童筛选
 CREATE INDEX idx_track_scheme_id ON assist_track_log(scheme_id);
 CREATE INDEX idx_track_week ON assist_track_log(week);
+CREATE INDEX idx_track_child ON assist_track_log(child_id);
 
 -- 7. 创建AI分析记录表（ai_analysis_log）
 CREATE TABLE ai_analysis_log (

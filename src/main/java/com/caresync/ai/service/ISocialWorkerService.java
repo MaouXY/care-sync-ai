@@ -3,6 +3,7 @@ package com.caresync.ai.service;
 import com.caresync.ai.model.DTO.SocialWorkerLoginDTO;
 import com.caresync.ai.model.DTO.UpdateSocialWorkerInfoDTO;
 import com.caresync.ai.model.VO.LoginVO;
+import com.caresync.ai.model.VO.SocialWorkerHomeVO;
 import com.caresync.ai.model.VO.SocialWorkerInfoVO;
 import com.caresync.ai.model.entity.SocialWorker;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -41,4 +42,11 @@ public interface ISocialWorkerService extends IService<SocialWorker> {
      * 登出
      */
     void logout();
+    
+    /**
+     * 获取社工首页信息
+     * @param workerId 社工ID
+     * @return 社工首页信息
+     */
+    SocialWorkerHomeVO getSocialWorkerHome(Long workerId);
 }

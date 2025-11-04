@@ -1,10 +1,13 @@
 package com.caresync.ai.service;
 
 import com.caresync.ai.model.DTO.ChildLoginDTO;
+import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
+import com.caresync.ai.model.VO.ChildQueueVO;
 import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
+import com.caresync.ai.result.PageResult;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -41,4 +44,11 @@ public interface IChildService extends IService<Child> {
      * 登出
      */
     void logout();
+    
+    /**
+     * 获取儿童列表
+     * @param childQueryDTO 查询条件
+     * @return 分页结果
+     */
+    PageResult<ChildQueueVO> getChildList(ChildQueryDTO childQueryDTO);
 }

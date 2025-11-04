@@ -22,8 +22,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 // 拦截所有请求
                 .addPathPatterns("/**")
                 // 排除不需要拦截的路径
-                .excludePathPatterns(
-                        "/user/register", "/user/login", "/user/logout",
+                .excludePathPatterns( //TODO 需要重新配置
+                        "/user/register", "/api/social-worker/login", "/api/social-worker/logout",
                         "/error", "/common/upload", "/api/judge0/webhook/callback",
                         "/static/**", "/resources/**"
                 );

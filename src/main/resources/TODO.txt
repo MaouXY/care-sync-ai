@@ -4,12 +4,13 @@
 # 社工端
     - 登录页面
         - 登录功能（已实现）
+        - 登出功能（已实现）
     - 社工首页
-        - 浮动弹出，数字逐渐增加的动画。
+        - 浮动弹出，数字逐渐增加的动画。(TODO)
         - 第一行的数据先写死
         - 第二行查询所有的和该社工绑定的儿童，显示情感趋势分析（aiStructInfo.emotion_scores所有儿童的平均值），儿童情况分布（aiStructInfo.potential_problems）
-        - 待处理任务，显示该社工的服务跟踪列表（案结束时间排序）
-        - 近期活动，显示最近完成是子任务 (子任务记录表)
+        - 待处理任务，显示该社工的AI服务方案列表展示target和worker_adjust_reason（scheme_status需要是IN_PROGRESS状态的方案，按照结束时间排序）
+        - 近期活动，显示最近完成是子任务 (子任务记录表，AI服务进度日志表)
     - 个人中心
         - 显示该社工的个人信息（姓名、手机号、邮箱等、服务范围？）
         - 修改密码功能（已实现）？
@@ -24,6 +25,12 @@
         - 关键发现 key_findings
         - 建议与干预策略 recommendations
         - AI结构化数据 ai_struct_info
+    - 儿童管理
+        - 显示儿童信息列表（分页查询），序号、儿童名字、性别、年龄、联系电话、风险等级（risk_level）、帮扶状态（service_status）、操作按钮（查看详情）
+    - 儿童详情
+        - 显示该儿童的基本信息（姓名、性别、年龄、联系电话等）
+        - 显示该儿童的AI分析结果、曲线图emotion_history、指标emotion_scores、分析摘要description TODO
+        - 当前服务计划（多表查询，服务计划表的服务目标）、最近互动记录（最近完成的子任务记录）
 
 # 儿童端 (ChildController) APP移动端
 # 儿童端接口 (ChildController) - 移动端

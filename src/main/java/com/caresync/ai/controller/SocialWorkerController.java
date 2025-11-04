@@ -1,5 +1,6 @@
 package com.caresync.ai.controller;
 
+import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.model.DTO.*;
 import com.caresync.ai.model.VO.*;
 import com.caresync.ai.result.PageResult;
@@ -22,6 +23,19 @@ public class SocialWorkerController {
     private ISocialWorkerService socialWorkerService;
 
     /**
+     * 社工首页
+     */
+    @GetMapping("/home")
+    @Operation(summary = "社工首页", description = "返回社工首页信息")
+    public Result<SocialWorkerHomeVO> getSocialWorkerHome() {
+        // 从ThreadLocal中获取当前登录的社工ID
+        Long workerId = BaseContext.getCurrentId();
+        // 调用service层方法获取社工首页信息
+        SocialWorkerHomeVO socialWorkerHomeVO = socialWorkerService.getSocialWorkerHome(workerId);
+        return Result.success(socialWorkerHomeVO);
+    }
+
+    /**
      * 社工登录
      * @param socialWorkerLoginDTO 社工登录DTO
      * @return 登录VO
@@ -40,8 +54,7 @@ public class SocialWorkerController {
     @PostMapping("/logout")
     @Operation(summary = "社工登出", description = "退出登录")
     public Result logout() {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
+        return Result.success("登出成功",null);
     }
 
     /**
@@ -51,8 +64,11 @@ public class SocialWorkerController {
     @GetMapping("/info")
     @Operation(summary = "获取个人信息", description = "获取社工个人信息")
     public Result<SocialWorkerInfoVO> getSocialWorkerInfo() {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success(null);
+        // 从ThreadLocal中获取当前登录的社工ID
+        Long workerId = BaseContext.getCurrentId();
+        // 调用service层方法获取社工个人信息
+        SocialWorkerInfoVO socialWorkerInfoVO = socialWorkerService.getSocialWorkerInfo(workerId);
+        return Result.success(socialWorkerInfoVO);
     }
 
     /**
@@ -71,7 +87,7 @@ public class SocialWorkerController {
 
     // AI聊天模块
 
-    /**
+    /** TODO 取消该接口
      * 获取会话列表
      * @param childId 可选，儿童ID
      * @param page 页码
@@ -132,24 +148,4 @@ public class SocialWorkerController {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success(null);
     }
-
-    // 服务方案模块 - 管理视角接口
-
-    /**
-     * 生成AI服务方案（管理视角）
-     * @param generateSchemeDTO 生成方案DTO
-     * @return 服务方案VO
-     */
-    @PostMapping("/scheme/admin-generate")
-    @Operation(summary = "生成AI服务方案（管理视角）", description = "根据儿童信息生成AI服务方案")
-    public Result<AssistSchemeVO> generateScheme(@RequestBody GenerateSchemeDTO generateSchemeDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success(null);
-    }
-
-    // 服务方案管理模块（管理视角）功能已移至AssistSchemeManageController控制器中
-    // 服务跟踪模块
-
-    // 服务跟踪模块功能已移至AssistTrackController控制器中
-    // AI分析模块功能已移至AiAnalysisController控制器中
 }
