@@ -1,4 +1,4 @@
-package com.caresync.ai.model.Json;
+package com.caresync.ai.model.json;
 
 import lombok.Data;
 

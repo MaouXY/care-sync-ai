@@ -1,3 +1,30 @@
+# 展示页
+    - 添加图片展示我们的社工端的功能
+    - 添加跳转，到我们的儿童demo页面，主要展示数字人的功能
+# 社工端
+    - 登录页面
+        - 登录功能（已实现）
+    - 社工首页
+        - 浮动弹出，数字逐渐增加的动画。
+        - 第一行的数据先写死
+        - 第二行查询所有的和该社工绑定的儿童，显示情感趋势分析（aiStructInfo.emotion_scores所有儿童的平均值），儿童情况分布（aiStructInfo.potential_problems）
+        - 待处理任务，显示该社工的服务跟踪列表（案结束时间排序）
+        - 近期活动，显示最近完成是子任务 (子任务记录表)
+    - 个人中心
+        - 显示该社工的个人信息（姓名、手机号、邮箱等、服务范围？）
+        - 修改密码功能（已实现）？
+    - AI分析结果
+        - 显示AI分析结果列表（分页查询），序号、儿童名字（年龄）、潜在问题、分析日期、emotion_trend、操作按钮（查看详情）
+    - AI分析详情
+        - 显示该儿童的AI分析详情 potential_problems、emotion_trend、core_needs
+        - 显示儿童姓名（年龄）
+        - 显示分析摘要 description
+        - 情绪趋势分析折现图 emotion_history
+        - 情感指标分析 emotion_scores
+        - 关键发现 key_findings
+        - 建议与干预策略 recommendations
+        - AI结构化数据 ai_struct_info
+
 # 儿童端 (ChildController) APP移动端
 # 儿童端接口 (ChildController) - 移动端
 ## 基础功能模块

@@ -116,17 +116,16 @@
         <div class="bg-white rounded-xl shadow-md p-4 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="relative">
-                    <input type="text" placeholder="搜索儿童姓名/分析类型" 
+                    <input type="text" placeholder="搜索儿童姓名/潜在问题/情感趋势" 
                         class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom">
                     <i class="fa fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral"></i>
                 </div>
                 <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
-                    <option value="">所有分析类型</option>
-                    <option value="emotional">情感状态分析</option>
-                    <option value="behavioral">行为模式分析</option>
-                    <option value="communication">沟通能力分析</option>
-                    <option value="needs">需求识别</option>
-                    <option value="comprehensive">综合分析</option>
+                    <option value="">所有潜在问题</option>
+                    <option value="confidence">社交互动自信心不足</option>
+                    <option value="attention">注意力分散问题</option>
+                    <option value="communication">沟通主动性不足</option>
+                    <option value="family">家庭情感支持不足</option>
                 </select>
                 <select class="border border-gray-300 rounded-lg px-4 py-2 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
                     <option value="">所有儿童</option>
@@ -175,17 +174,17 @@
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
                                 <div class="flex items-center space-x-1">
-                                    <span>分析类型</span>
-                                </div>
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
-                                <div class="flex items-center space-x-1">
                                     <span>分析日期</span>
                                 </div>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
                                 <div class="flex items-center space-x-1">
-                                    <span>分析状态</span>
+                                    <span>潜在问题</span>
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
+                                <div class="flex items-center space-x-1">
+                                    <span>情感趋势</span>
                                 </div>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-neutral uppercase tracking-wider">
@@ -215,16 +214,24 @@
                                     <span class="text-neutral">小明 (10岁)</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
-                                    情感状态分析
-                                </span>
-                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    已完成
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    社交互动自信心不足
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-1">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                        孤独
+                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                        平静
+                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
+                                        开心
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="max-w-xs truncate">
@@ -257,16 +264,21 @@
                                     <span class="text-neutral">小红 (12岁)</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
-                                    行为模式分析
-                                </span>
-                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-12</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    已完成
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    注意力分散问题
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-1">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
+                                        专注
+                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
+                                        急躁
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="max-w-xs truncate">
@@ -299,16 +311,21 @@
                                     <span class="text-neutral">小华 (11岁)</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
-                                    沟通能力分析
-                                </span>
-                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-10</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    已完成
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    沟通主动性不足
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-1">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                        封闭
+                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
+                                        平静
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="max-w-xs truncate">
@@ -341,16 +358,21 @@
                                     <span class="text-neutral">小美 (9岁)</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
-                                    需求识别
-                                </span>
-                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-08</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    已完成
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-danger/10 text-danger">
+                                    家庭情感支持不足
                                 </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex space-x-1">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-accent/10 text-accent">
+                                        兴奋
+                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
+                                        孤独
+                                    </span>
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="max-w-xs truncate">
@@ -383,12 +405,12 @@
                                     <span class="text-neutral">小强 (13岁)</span>
                                 </div>
                             </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    综合分析
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-neutral/10 text-neutral">
+                                    分析中
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-neutral">2023-07-15</td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning/10 text-warning">
                                     分析中

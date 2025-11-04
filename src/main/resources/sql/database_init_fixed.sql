@@ -13,14 +13,23 @@ CREATE DATABASE care_sync_db
 
 -- 2.使用数据库care_sync_db
 
-
 -- 3. 创建儿童表（child）
 CREATE TABLE child (
                        id BIGSERIAL PRIMARY KEY, -- 儿童唯一ID（自增）
                        child_no VARCHAR(20) NOT NULL UNIQUE, -- 儿童登录ID（社工预先创建）
-                       -- TODO 添加绑定的社会工作者ID（外键关联social_workers表），作为服务状态（默认NULL，开始后绑定），带服务（未指定服务社工）、服务中（指定服务社工）、完成（完成服务，可能是成年、被领养）
+                       social_worker_id BIGINT REFERENCES social_worker(id), -- 绑定的社会工作者ID（外键关联social_workers表）
+                       service_status VARCHAR(20) NOT NULL DEFAULT '未指定服务社工', -- 服务状态：未指定服务社工、服务中、已完成
+                       risk_level VARCHAR(20) NOT NULL, -- 风险等级：低风险、中风险、高风险、紧急
                        name VARCHAR(50) NOT NULL, -- 儿童姓名
                        age INT NOT NULL CHECK (age > 0), -- 儿童年龄
+                       gender VARCHAR(10) NOT NULL, -- 性别：男/女
+                       birth_date DATE NOT NULL, -- 出生日期（用于计算年龄）
+                       id_card VARCHAR(18) UNIQUE, -- 身份证号（唯一标识）
+                       address TEXT, -- 家庭地址
+                       notes TEXT, -- 备注信息
+                       phone VARCHAR(20), -- 联系电话
+                       guardian_name VARCHAR(50), -- 监护人姓名
+                       guardian_phone VARCHAR(20), -- 监护人电话
                        verify_code VARCHAR(4) NOT NULL, -- 4位登录验证码（BCrypt加密存储）
                        has_new_chat BOOLEAN DEFAULT FALSE, -- 是否有新聊天记录（社工端列表标注）
                        ai_struct_info JSONB, -- AI结构化信息：情感趋势、核心需求等
@@ -33,31 +42,66 @@ CREATE TABLE child (
 -- 索引：优化登录查询与新消息筛选
 CREATE INDEX idx_child_child_no ON child(child_no);
 CREATE INDEX idx_child_has_new_chat ON child(has_new_chat);
--- ai_struct_info扩展结构示例（适配AI分析结果展示页）TODO 去除 分析类型 分析状态 改成显示 potential_problems 和 emotion_trend
+CREATE INDEX idx_child_social_worker_id ON child(social_worker_id); -- 优化社工关联查询
+CREATE INDEX idx_child_service_status ON child(service_status); -- 优化服务状态筛选
+CREATE INDEX idx_child_risk_level ON child(risk_level); -- 优化风险等级筛选
+
+-- ai_struct_info扩展结构示例（适配AI分析结果展示页）TODO 去除 分析类型 分析状态 改成显示 potential_problems 和 emotion_trend 还需要固定化一下有哪些tag好对应颜色
 -- {
---   "emotion_trend": ["孤独", "平静", "开心"], -- 情感趋势标签（对应图表X轴）TODO 在儿童列表-就展示，但现在并未使用
---   "core_needs": ["故事陪伴", "学习辅导"], -- 核心需求标签（展示在摘要卡片）TODO 在儿童详情列表-就展示，但现在并未使用
+--   "emotion_trend": [
+--     "孤独",
+--     "平静",
+--     "开心"
+--   ], -- 情感趋势标签（对应图表X轴）TODO 在儿童列表-就展示，但现在并未使用
+--   "core_needs": [
+--     "故事陪伴",
+--     "学习辅导"
+--   ], -- 核心需求标签（展示在摘要卡片）TODO 在儿童详情列表-就展示，但现在并未使用
 --   "potential_problems": "沟通较少", -- 潜在问题标签（红色预警展示）TODO 在儿童列-就展示，但现在并未使用
 --   "description": "该儿童存在孤独感，沟通较少，核心需求为故事陪伴, 学习辅导", -- 分析摘要（综合描述）
 --   "latest_analysis": "2023-07-15 15:30:00", -- 最新分析时间（页面右上角标注）
---   "emotion_scores": { -- 情感评分指标（雷达图数据）
+--   "emotion_scores": {
 --     "情绪稳定性": 75,
 --     "焦虑水平": 35,
 --     "幸福感": 65,
 --     "社交自信": 45
---   },
---   "emotion_history": [ -- 情感历史记录（趋势图数据）
---     {"date": "2023-07-15", "scores": {"情绪稳定性": 75, "焦虑水平": 35, "幸福感": 65, "社交自信": 45}},
---     {"date": "2023-07-08", "scores": {"情绪稳定性": 60, "焦虑水平": 45, "幸福感": 60, "社交自信": 45}},
---     {"date": "2023-07-01", "scores": {"情绪稳定性": 55, "焦虑水平": 50, "幸福感": 55, "社交自信": 40}}
---   ],
---   "key_findings": [ -- 关键发现列表（分析结果详情）
+--   }, -- 情感评分指标（雷达图数据）
+--   "emotion_history": [
+--     {
+--       "date": "2023-07-15",
+--       "scores": {
+--         "情绪稳定性": 75,
+--         "焦虑水平": 35,
+--         "幸福感": 65,
+--         "社交自信": 45
+--       }
+--     },
+--     {
+--       "date": "2023-07-08",
+--       "scores": {
+--         "情绪稳定性": 60,
+--         "焦虑水平": 45,
+--         "幸福感": 60,
+--         "社交自信": 45
+--       }
+--     },
+--     {
+--       "date": "2023-07-01",
+--       "scores": {
+--         "情绪稳定性": 55,
+--         "焦虑水平": 50,
+--         "幸福感": 55,
+--         "社交自信": 40
+--       }
+--     }
+--   ], -- 情感历史记录（趋势图数据）
+--   "key_findings": [
 --     "情绪稳定性较上周提升了15%，表现出更好的情绪调节能力。",
 --     "焦虑水平有所下降，但在提及学校作业时仍表现出一定压力。",
 --     "社交互动中的自信心仍然不足，需要更多的鼓励和支持。",
 --     "与AI助手的互动频率增加，表明他对这种交流方式感到舒适。"
---   ],
---   "recommendations": [ -- 建议列表（分析结果详情->服务计划生成依据）
+--   ], -- 关键发现列表（分析结果详情）
+--   "recommendations": [
 --     {
 --       "title": "继续保持与小明的定期沟通",
 --       "description": "每周安排1-2次简短的交流，关注他的日常感受和需求。",
@@ -76,7 +120,7 @@ CREATE INDEX idx_child_has_new_chat ON child(has_new_chat);
 --       "title": "提供情绪管理技巧指导",
 --       "description": "教导小明一些简单的情绪调节方法，帮助他应对压力情境。"
 --     }
---   ]
+--   ] -- 建议列表（分析结果详情->服务计划生成依据）
 -- }
 
 -- interest_tags结构示例
@@ -121,7 +165,6 @@ CREATE TABLE ai_assist_scheme (
                                   target VARCHAR(200) NOT NULL, -- 服务目标（如"缓解孤独感"）
                                   measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
                                   cycle INT DEFAULT 7, -- 周期（默认1周）
-                                  -- TODO 需要添加项目是否开始的功能，默认草稿状态，开始后状态变更为IN_PROGRESS并在跟踪界面显示，完成后变更为COMPLETED，我觉得还需要专门添加一个项目跟踪详情页面，并且增加一个项目进度详情表和子任务完成情况表，记录每个具体措施的完成，作为在儿童界面显示的最近互动记录，和
                                   scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
                                   ai_suggestions JSONB NOT NULL, -- AI原始建议（含目标、措施、依据）
                                   worker_adjust_reason TEXT, -- 社工调整理由
@@ -137,27 +180,83 @@ CREATE TABLE ai_assist_scheme (
 -- 索引：优化方案查询与状态筛选
 CREATE INDEX idx_scheme_child_worker ON ai_assist_scheme(child_id, worker_id);
 CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
+-- 方案状态管理：草稿(DRAFT)→进行中(IN_PROGRESS)→完成(COMPLETED)
+-- 子任务完成状态直接通过ai_suggestions JSON字段中的details数组实现
+-- details数组中的每个子任务对象包含content(任务内容)和status(完成状态)字段
+-- status字段支持三种状态：pending(待处理)/in_progress(进行中)/completed(已完成)
 -- ai_suggestions结构示例（适配服务计划页面）
 -- {
---   "target_suggest": ["缓解孤独感", "提升社交自信"], -- 建议目标（与风险等级联动）
---   "measures_suggest": [ -- 建议措施（最多3条，适配计划列表）
---     "每周3次AI故事推送（数字人播报，偏好童话类）",
---     "设计互动游戏提升社交技能",
---     "定期安排线上互动活动"
---   ],
---     TODO  方案目标  服务措施（一级条目（一周时间），二级条目（具体措施，））
+--   "target_suggest": [ -- 方案目标
+--     "降低孤独焦虑，建立积极心态",
+--     "增强情绪管理，正确表达感受",
+--     "提升社交能力，改善人际沟通"
+--   ], -- 方案目标
+--   "measures_suggest": [ -- 服务措施
+--     {
+--       "week": "建立信任关系",
+--       "details": [
+--         {"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "completed"},
+--         {"content": "一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "status": "completed"},
+--         {"content": "与小明约定每周固定的见面时间，增加安全感。", "status": "in_progress"}
+--       ]
+--     },
+--     {
+--       "week": "情绪识别与表达",
+--       "details": [
+--         {"content": "通过情绪卡片游戏，帮助小明识别不同的情绪。", "status": "pending"},
+--         {"content": "引导小明用绘画的方式表达自己的内心感受。", "status": "pending"},
+--         {"content": "教授简单的情绪调节方法，如深呼吸、倾诉等。", "status": "pending"}
+--       ]
+--     },
+--     {
+--       "week": "社交技能培养",
+--       "details": [
+--         {"content": "组织小组活动，鼓励小明与其他小朋友互动。", "status": "pending"},
+--         {"content": "角色扮演练习，学习如何与他人友好沟通。", "status": "pending"},
+--         {"content": "分享正面社交经验，增强小明的自信心。", "status": "pending"}
+--       ]
+--     },
+--     {
+--       "week": "总结与展望",
+--       "details": [
+--         {"content": "回顾四周的变化，肯定小明的进步。", "status": "pending"},
+--         {"content": "共同制定后续计划，帮助小明保持积极状态。", "status": "pending"},
+--         {"content": "与家长沟通，分享小明的成长和需要继续关注的方面。", "status": "pending"}
+--       ]
+--     }
+--   ]
 -- }
+
+
 
 -- evaluation_index结构示例（适配进度跟踪页面）
 -- {
---   "key_indicators": [ -- 关键指标（进度条展示）
---     {"name": "情绪稳定性", "target_value": 80, "current_value": 65, "trend": "up"},
---     {"name": "社交参与度", "target_value": 75, "current_value": 50, "trend": "stable"}
---   ],
---   "milestones": [ -- 里程碑（时间线展示）
---     {"week": 1, "description": "建立信任关系，每周至少2次有效沟通", "status": "completed"},
---     {"week": 4, "description": "情绪稳定性提升10%以上", "status": "pending"}
---   ]
+--   "key_indicators": [
+--     {
+--       "name": "情绪稳定性",
+--       "target_value": 80,
+--       "current_value": 65,
+--       "trend": "up"
+--     },
+--     {
+--       "name": "社交参与度",
+--       "target_value": 75,
+--       "current_value": 50,
+--       "trend": "stable"
+--     }
+--   ], -- 关键指标（进度条展示）
+--   "milestones": [
+--     {
+--       "week": 1,
+--       "description": "建立信任关系，每周至少2次有效沟通",
+--       "status": "completed"
+--     },
+--     {
+--       "week": 4,
+--       "description": "情绪稳定性提升10%以上",
+--       "status": "pending"
+--     }
+--   ] -- 里程碑（时间线展示）
 -- }
 
 -- 6. 创建AI服务进度日志表（assist_track_log）
@@ -266,7 +365,7 @@ CREATE TABLE training_session (
 CREATE INDEX idx_session_worker ON training_session(worker_id);
 CREATE INDEX idx_session_status ON training_session(session_status);
 
--- 11. 创建训练聊天记录表（training_chat_record）TODO AI简单！指导意见
+-- 11. 创建训练聊天记录表（training_chat_record）
 CREATE TABLE training_chat_record (
                                       id BIGSERIAL PRIMARY KEY, -- 记录ID
                                       session_id BIGINT NOT NULL, -- 训练会话ID
@@ -311,12 +410,3 @@ CREATE TABLE training_evaluation (
 );
 -- 索引：优化会话评估查询
 CREATE INDEX idx_evaluation_session ON training_evaluation(session_id);
-
-
-
-
-
-
-
-
-

@@ -1,9 +1,8 @@
-package com.caresync.ai.model.Json;
+package com.caresync.ai.model.json;
 
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * AI个性模板（对应simulation_scenario表的ai_personality_template字段）
