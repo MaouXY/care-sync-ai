@@ -64,12 +64,12 @@ CREATE INDEX idx_chat_digi_session ON ai_chat_record(digi_session_id); -- 👉 �
 CREATE INDEX idx_chat_session ON ai_chat_record(session_id);
 CREATE INDEX idx_chat_child_time ON ai_chat_record(child_id, create_time);
 
--- 5. 创建AI帮扶方案表（ai_assist_scheme）
+-- 5. 创建AI服务方案表（ai_assist_scheme）
 CREATE TABLE ai_assist_scheme (
                                   id BIGSERIAL PRIMARY KEY, -- 方案ID
                                   child_id BIGINT NOT NULL, -- 关联儿童ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID
-                                  target VARCHAR(200) NOT NULL, -- 帮扶目标（如“缓解孤独感”）
+                                  target VARCHAR(200) NOT NULL, -- 服务目标（如“缓解孤独感”）
                                   measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
                                   cycle INT DEFAULT 7, -- 周期（默认1周）
                                   scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
@@ -94,12 +94,12 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 --   "basis": "近5次对话中，儿童3次提到“想听故事”"
 -- }
 
--- 6. 创建AI帮扶进度日志表（assist_track_log）
+-- 6. 创建AI服务进度日志表（assist_track_log）
 CREATE TABLE assist_track_log (
                                   id BIGSERIAL PRIMARY KEY, -- 日志ID
-                                  scheme_id BIGINT NOT NULL, -- 关联帮扶方案ID
+                                  scheme_id BIGINT NOT NULL, -- 关联服务方案ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID（记录人）
-                                  week INT NOT NULL, -- 帮扶周次（如“第1周”“第2周”）
+                                  week INT NOT NULL, -- 服务周次（如“第1周”“第2周”）
                                   completion_status VARCHAR(20) NOT NULL, -- 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
                                   record_content TEXT NOT NULL, -- 记录内容（如“已完成1次电话沟通”）
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

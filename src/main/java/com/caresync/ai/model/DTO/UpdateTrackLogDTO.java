@@ -3,7 +3,7 @@ package com.caresync.ai.model.DTO;
 import lombok.Data;
 
 /**
- * 更新帮扶日志请求参数
+ * 更新服务日志请求参数
  */
 @Data
 public class UpdateTrackLogDTO {

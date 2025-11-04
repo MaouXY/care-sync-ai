@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>帮扶方案管理 - CareSync AI</title>
+    <title>服务方案管理 - CareSync AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -96,7 +96,7 @@
         <!-- 页面标题和操作 -->
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                <h1 class="text-2xl font-bold text-dark">帮扶方案管理</h1>
+                <h1 class="text-2xl font-bold text-dark">服务方案管理</h1>
                 <div class="flex items-center space-x-4 mt-4 sm:mt-0">
                     <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
                         <i class="fa fa-refresh"></i>
@@ -108,7 +108,7 @@
                     </button>
                 </div>
             </div>
-            <p class="text-neutral mt-1">管理所有儿童的帮扶方案，支持AI生成和人工编辑</p>
+            <p class="text-neutral mt-1">管理所有儿童的服务方案，支持AI生成和人工编辑</p>
         </div>
         
         <!-- 搜索和筛选 -->
@@ -133,7 +133,7 @@
                     <option value="educational">教育支持</option>
                     <option value="behavioral">行为引导</option>
                     <option value="family">家庭沟通</option>
-                    <option value="comprehensive">综合帮扶</option>
+                    <option value="comprehensive">综合服务</option>
                 </select>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -392,7 +392,7 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-secondary/10 text-secondary">
-                                    综合帮扶
+                                    综合服务
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
@@ -473,7 +473,7 @@
     <div id="generateSchemeModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4">
             <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-dark">AI生成帮扶方案</h3>
+                <h3 class="text-xl font-bold text-dark">AI生成服务方案</h3>
                 <button id="closeGenerateSchemeModal" class="text-neutral hover:text-dark transition-custom">
                     <i class="fa fa-times text-xl"></i>
                 </button>
@@ -502,7 +502,7 @@
                         <option value="educational">教育支持</option>
                         <option value="behavioral">行为引导</option>
                         <option value="family">家庭沟通</option>
-                        <option value="comprehensive">综合帮扶</option>
+                        <option value="comprehensive">综合服务</option>
                     </select>
                 </div>
                 
@@ -545,7 +545,7 @@
                 <i class="fa fa-cog fa-spin text-2xl"></i>
             </div>
             <h3 class="text-xl font-bold text-dark mb-2">方案生成中</h3>
-            <p class="text-neutral mb-6">AI正在为您生成个性化帮扶方案，请稍候...</p>
+            <p class="text-neutral mb-6">AI正在为您生成个性化服务方案，请稍候...</p>
             <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
                 <div id="progressBar" class="bg-primary h-2.5 rounded-full" style="width: 0%"></div>
             </div>
@@ -608,7 +608,7 @@
                     // 进度完成后关闭弹窗并显示成功提示
                     setTimeout(() => {
                         generatingSchemeModal.classList.add('hidden');
-                        alert('帮扶方案生成成功！');
+                        alert('服务方案生成成功！');
                         closeGenerateModal();
                     }, 500);
                 }
@@ -649,9 +649,9 @@
                     window.location.href = `social-worker-scheme-detail.html?schemeId=${schemeId}&edit=true`;
                 } else if (action.includes('fa-trash')) {
                     // 删除方案
-                    if (confirm(`确定要删除帮扶方案：${schemeName}吗？`)) {
+                    if (confirm(`确定要删除服务方案：${schemeName}吗？`)) {
                         // 实际应用中，应该调用删除API
-                        alert(`帮扶方案已删除`);
+                        alert(`服务方案已删除`);
                     }
                 }
             });

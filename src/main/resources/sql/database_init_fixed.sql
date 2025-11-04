@@ -18,7 +18,7 @@ CREATE DATABASE care_sync_db
 CREATE TABLE child (
                        id BIGSERIAL PRIMARY KEY, -- 儿童唯一ID（自增）
                        child_no VARCHAR(20) NOT NULL UNIQUE, -- 儿童登录ID（社工预先创建）
-                       -- TODO 添加绑定的社会工作者ID（外键关联social_workers表），作为帮扶状态（默认NULL，开始后绑定），带帮扶（未指定帮扶社工）、帮扶中（指定帮扶社工）、完成（完成帮扶，可能是成年、被领养）
+                       -- TODO 添加绑定的社会工作者ID（外键关联social_workers表），作为服务状态（默认NULL，开始后绑定），带服务（未指定服务社工）、服务中（指定服务社工）、完成（完成服务，可能是成年、被领养）
                        name VARCHAR(50) NOT NULL, -- 儿童姓名
                        age INT NOT NULL CHECK (age > 0), -- 儿童年龄
                        verify_code VARCHAR(4) NOT NULL, -- 4位登录验证码（BCrypt加密存储）
@@ -57,7 +57,7 @@ CREATE INDEX idx_child_has_new_chat ON child(has_new_chat);
 --     "社交互动中的自信心仍然不足，需要更多的鼓励和支持。",
 --     "与AI助手的互动频率增加，表明他对这种交流方式感到舒适。"
 --   ],
---   "recommendations": [ -- 建议列表（分析结果详情->帮扶计划生成依据）
+--   "recommendations": [ -- 建议列表（分析结果详情->服务计划生成依据）
 --     {
 --       "title": "继续保持与小明的定期沟通",
 --       "description": "每周安排1-2次简短的交流，关注他的日常感受和需求。",
@@ -113,12 +113,12 @@ CREATE INDEX idx_chat_digi_session ON ai_chat_record(digi_session_id);
 CREATE INDEX idx_chat_session ON ai_chat_record(session_id);
 CREATE INDEX idx_chat_child_time ON ai_chat_record(child_id, create_time);
 
--- 5. 创建AI帮扶方案表（ai_assist_scheme）
+-- 5. 创建AI服务方案表（ai_assist_scheme）
 CREATE TABLE ai_assist_scheme (
                                   id BIGSERIAL PRIMARY KEY, -- 方案ID
                                   child_id BIGINT NOT NULL, -- 关联儿童ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID
-                                  target VARCHAR(200) NOT NULL, -- 帮扶目标（如"缓解孤独感"）
+                                  target VARCHAR(200) NOT NULL, -- 服务目标（如"缓解孤独感"）
                                   measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
                                   cycle INT DEFAULT 7, -- 周期（默认1周）
                                   -- TODO 需要添加项目是否开始的功能，默认草稿状态，开始后状态变更为IN_PROGRESS并在跟踪界面显示，完成后变更为COMPLETED，我觉得还需要专门添加一个项目跟踪详情页面，并且增加一个项目进度详情表和子任务完成情况表，记录每个具体措施的完成，作为在儿童界面显示的最近互动记录，和
@@ -137,7 +137,7 @@ CREATE TABLE ai_assist_scheme (
 -- 索引：优化方案查询与状态筛选
 CREATE INDEX idx_scheme_child_worker ON ai_assist_scheme(child_id, worker_id);
 CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
--- ai_suggestions结构示例（适配帮扶计划页面）
+-- ai_suggestions结构示例（适配服务计划页面）
 -- {
 --   "target_suggest": ["缓解孤独感", "提升社交自信"], -- 建议目标（与风险等级联动）
 --   "measures_suggest": [ -- 建议措施（最多3条，适配计划列表）
@@ -145,7 +145,7 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 --     "设计互动游戏提升社交技能",
 --     "定期安排线上互动活动"
 --   ],
---     TODO  方案目标  帮扶措施（一级条目（一周时间），二级条目（具体措施，））
+--     TODO  方案目标  服务措施（一级条目（一周时间），二级条目（具体措施，））
 -- }
 
 -- evaluation_index结构示例（适配进度跟踪页面）
@@ -160,12 +160,12 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 --   ]
 -- }
 
--- 6. 创建AI帮扶进度日志表（assist_track_log）
+-- 6. 创建AI服务进度日志表（assist_track_log）
 CREATE TABLE assist_track_log (
                                   id BIGSERIAL PRIMARY KEY, -- 日志ID
-                                  scheme_id BIGINT NOT NULL, -- 关联帮扶方案ID
+                                  scheme_id BIGINT NOT NULL, -- 关联服务方案ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID（记录人）
-                                  week INT NOT NULL, -- 帮扶周次（如"第1周""第2周"）
+                                  week INT NOT NULL, -- 服务周次（如"第1周""第2周"）
                                   completion_status VARCHAR(20) NOT NULL, -- 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
                                   record_content TEXT NOT NULL, -- 记录内容（如"已完成1次电话沟通"）
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

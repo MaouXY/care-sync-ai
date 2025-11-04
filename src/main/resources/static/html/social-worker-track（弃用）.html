@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>帮扶跟踪管理 - CareSync AI</title>
+    <title>服务跟踪管理 - CareSync AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
     <script>
@@ -96,7 +96,7 @@
         <!-- 页面标题和操作 -->
         <div class="mb-6">
             <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-                <h1 class="text-2xl font-bold text-dark">帮扶跟踪管理</h1>
+                <h1 class="text-2xl font-bold text-dark">服务跟踪管理</h1>
                 <div class="flex items-center space-x-4 mt-4 sm:mt-0">
                     <button id="refreshBtn" class="flex items-center space-x-2 text-neutral hover:text-primary transition-custom">
                         <i class="fa fa-refresh"></i>
@@ -108,7 +108,7 @@
                     </button>
                 </div>
             </div>
-            <p class="text-neutral mt-1">记录和跟踪帮扶方案的执行情况</p>
+            <p class="text-neutral mt-1">记录和跟踪服务方案的执行情况</p>
         </div>
         
         <!-- 搜索和筛选 -->
@@ -504,7 +504,7 @@
                     <label for="selectScheme" class="block text-sm font-medium text-neutral mb-1">选择方案 <span class="text-danger">*</span></label>
                     <select id="selectScheme" required 
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom appearance-none bg-white">
-                        <option value="">请选择帮扶方案</option>
+                        <option value="">请选择服务方案</option>
                         <option value="1">小明情感陪伴与心理疏导方案</option>
                         <option value="2">小红学习支持与自信心培养方案</option>
                         <option value="3">小华行为习惯引导与兴趣培养方案</option>
@@ -520,7 +520,7 @@
                             <i class="fa fa-child"></i>
                         </div>
                         <div>
-                            <p id="childName" class="font-medium text-dark">请先选择帮扶方案</p>
+                            <p id="childName" class="font-medium text-dark">请先选择服务方案</p>
                             <p id="childAge" class="text-sm text-neutral">--</p>
                         </div>
                     </div>
@@ -567,7 +567,7 @@
                 
                 <div>
                     <label for="nextPlan" class="block text-sm font-medium text-neutral mb-1">下一步计划</label>
-                    <textarea id="nextPlan" rows="3" placeholder="请描述下一步的帮扶计划和安排..." 
+                    <textarea id="nextPlan" rows="3" placeholder="请描述下一步的服务计划和安排..." 
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-custom resize-none"></textarea>
                 </div>
                 
@@ -615,7 +615,7 @@
             <div class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <p class="text-sm text-neutral mb-1">帮扶方案</p>
+                        <p class="text-sm text-neutral mb-1">服务方案</p>
                         <p class="font-medium text-dark">小明情感陪伴与心理疏导方案</p>
                     </div>
                     <div>
@@ -653,7 +653,7 @@
                     <p class="text-sm text-neutral mb-1">跟踪内容</p>
                     <div class="p-4 bg-light rounded-lg">
                         <p class="text-dark">与小明进行了家访，了解到他的情感状态有所改善，开始主动与家人交流。在学校的表现也有所进步，老师反馈他最近上课注意力更加集中，作业完成质量也有所提高。小明表示他很喜欢与AI助手聊天，认为这对他的情绪有很大帮助。</p>
-                        <p class="text-dark mt-2">在交流中发现，小明对绘画表现出浓厚的兴趣，经常在家中进行创作。建议在后续的帮扶方案中增加绘画相关的活动，以进一步提升他的自信心和创造力。</p>
+                        <p class="text-dark mt-2">在交流中发现，小明对绘画表现出浓厚的兴趣，经常在家中进行创作。建议在后续的服务方案中增加绘画相关的活动，以进一步提升他的自信心和创造力。</p>
                     </div>
                 </div>
                 
@@ -663,7 +663,7 @@
                         <p class="text-dark">1. 下周安排一次电话回访，了解小明的最新情况</p>
                         <p class="text-dark mt-1">2. 与学校老师沟通，了解小明在学校的具体表现</p>
                         <p class="text-dark mt-1">3. 为小明准备一些绘画工具和参考书籍</p>
-                        <p class="text-dark mt-1">4. 在下次的帮扶方案调整中增加绘画相关活动</p>
+                        <p class="text-dark mt-1">4. 在下次的服务方案调整中增加绘画相关活动</p>
                     </div>
                 </div>
                 
@@ -771,7 +771,7 @@
                 childName.textContent = '小强';
                 childAge.textContent = '13岁';
             } else {
-                childName.textContent = '请先选择帮扶方案';
+                childName.textContent = '请先选择服务方案';
                 childAge.textContent = '--';
             }
         }

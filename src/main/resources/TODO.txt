@@ -29,16 +29,16 @@
 ## 紧急呼叫模块 (SocialWorkerController)
     1. 获取紧急呼叫记录 (GET /api/social-worker/emergency/calls) - 获取儿童的紧急呼叫记录
 
-## 帮扶方案模块 (SocialWorkerController)
-    1. 生成AI帮扶方案 (POST /api/social-worker/scheme/generate) - 根据儿童信息生成AI帮扶方案
+## 服务方案模块 (SocialWorkerController)
+    1. 生成AI服务方案 (POST /api/social-worker/scheme/generate) - 根据儿童信息生成AI服务方案
     2. 获取方案列表 (GET /api/social-worker/scheme/list) - 按儿童ID或状态查询
     3. 获取方案详情 (GET /api/social-worker/scheme/detail/{id})
-    4. 修改方案状态 (POST /api/social-worker/scheme/change-status) - 修改帮扶方案的状态
+    4. 修改方案状态 (POST /api/social-worker/scheme/change-status) - 修改服务方案的状态
 
-## 帮扶跟踪模块 (SocialWorkerController)
-    1. 获取帮扶跟踪日志列表 (GET /api/social-worker/track/logs) - 获取指定方案的帮扶跟踪日志
-    2. 添加帮扶跟踪日志 (POST /api/social-worker/track/log) - 添加新的帮扶跟踪日志
-    3. 更新帮扶跟踪日志 (PUT /api/social-worker/track/log/{id}) - 更新帮扶跟踪日志内容
+## 服务跟踪模块 (SocialWorkerController)
+    1. 获取服务跟踪日志列表 (GET /api/social-worker/track/logs) - 获取指定方案的服务跟踪日志
+    2. 添加服务跟踪日志 (POST /api/social-worker/track/log) - 添加新的服务跟踪日志
+    3. 更新服务跟踪日志 (PUT /api/social-worker/track/log/{id}) - 更新服务跟踪日志内容
 
 ## AI分析模块 (SocialWorkerController)
     1. 获取AI分析结果列表 (GET /api/social-worker/ai/analysis/list) - 获取指定儿童的AI分析结果

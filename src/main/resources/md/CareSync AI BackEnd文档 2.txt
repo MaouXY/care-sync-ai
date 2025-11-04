@@ -1,4 +1,4 @@
-# 留守儿童 AI 情感陪伴与帮扶项目 - 后端设计方案（修订版）
+# 留守儿童 AI 情感陪伴与服务项目 - 后端设计方案（修订版）
 
 基于 “数字人 Sessions 由 live talking 服务生成，仅需维护‘数字人实例画面传输 + 文本指令分发’关联” 的核心需求，删除独立数字人会话表，将会话关联逻辑融入现有表结构，同时保留原有轻量化、闭环优先的设计原则，修订数据库、架构及接口设计如下：
 
@@ -73,16 +73,16 @@ CREATE INDEX idx_chat_child_time ON ai_chat_record(child_id, create_time);
 
 **核心作用**：通过`digi_session_id`将儿童的每轮聊天内容与 livetalking 的数字人实例绑定，后端接收儿童消息后，携带该 ID 调用 livetalking 接口，确保文本指令分发到正确实例，同时获取对应实例的画面流。
 
-#### （3）AI 帮扶方案表（`ai_assist_scheme`）- 无变更
+#### （3）AI 服务方案表（`ai_assist_scheme`）- 无变更
 
-维持 “AI 建议 + 社工决策” 协作结构，数字人相关帮扶措施（如 “AI 故事推送”）通过`measures`数组存储，无需关联数字人 Session（推送时临时调用 live talking 生成 Session 即可）：
+维持 “AI 建议 + 社工决策” 协作结构，数字人相关服务措施（如 “AI 故事推送”）通过`measures`数组存储，无需关联数字人 Session（推送时临时调用 live talking 生成 Session 即可）：
 
 ```sql
 CREATE TABLE ai_assist_scheme (
     id BIGSERIAL PRIMARY KEY, -- 方案ID
     child_id BIGINT NOT NULL, -- 关联儿童ID
     worker_id BIGINT NOT NULL, -- 关联社工ID
-    target VARCHAR(200) NOT NULL, -- 帮扶目标（如“缓解孤独感”）
+    target VARCHAR(200) NOT NULL, -- 服务目标（如“缓解孤独感”）
     measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 措施（最多3条）
     cycle INT DEFAULT 7, -- 周期（默认1周）
     scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
@@ -109,16 +109,16 @@ CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
 -- }
 ```
 
-#### （4）帮扶跟踪日志表（`assist_track_log`）
+#### （4）服务跟踪日志表（`assist_track_log`）
 
-存储社工的帮扶进度记录，支撑 “闭环亮点”
+存储社工的服务进度记录，支撑 “闭环亮点”
 
 ```sql
 CREATE TABLE assist_track_log (
     id BIGSERIAL PRIMARY KEY, -- 日志ID
-    scheme_id BIGINT NOT NULL, -- 关联帮扶方案ID
+    scheme_id BIGINT NOT NULL, -- 关联服务方案ID
     worker_id BIGINT NOT NULL, -- 关联社工ID（记录人）
-    week INT NOT NULL, -- 帮扶周次（如“第1周”“第2周”）
+    week INT NOT NULL, -- 服务周次（如“第1周”“第2周”）
     completion_status VARCHAR(20) NOT NULL, -- 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
     record_content TEXT NOT NULL, -- 记录内容（如“已完成1次电话沟通”）
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -469,7 +469,7 @@ public class LivetalkingException extends RuntimeException {
 
 ### 4. 社工端核心接口
 
-社工端核心接口（儿童管理、方案生成、帮扶跟踪）维持原有逻辑，仅在 “方案生成” 的 AI 建议中可能包含数字人相关措施（如 “数字人故事推送”），无需新增数字人 Session 相关接口。
+社工端核心接口（儿童管理、方案生成、服务跟踪）维持原有逻辑，仅在 “方案生成” 的 AI 建议中可能包含数字人相关措施（如 “数字人故事推送”），无需新增数字人 Session 相关接口。
 
 #### （1）儿童管理模块
 
@@ -478,20 +478,20 @@ public class LivetalkingException extends RuntimeException {
 | `/api/social-worker/child/list`   | GET      | 获取儿童列表（分页）             | `pageNum`（页码）、`pageSize`（每页条数）、`hasNewChat`（可选，筛选新消息） | 分页对象（`list`：儿童列表 VO、`total`：总数） |
 | `/api/social-worker/child/detail` | GET      | 获取儿童详情（含 AI 结构化信息） | `childId`                                                    | 儿童详情 VO（`name`/`age`/`aiStructInfo`等）   |
 
-#### （2）帮扶方案模块
+#### （2）服务方案模块
 
 | 接口路径                             | 请求方式 | 接口描述             | 入参（DTO）                                      | 出参（data）                               |
 | ------------------------------------ | -------- | -------------------- | ------------------------------------------------ | ------------------------------------------ |
-| `/api/social-worker/scheme/generate` | POST     | 1 键生成 AI 帮扶方案 | `childId`、`workerId`                            | 帮扶方案 VO（`target`/`measures`/`cycle`） |
-| `/api/social-worker/scheme/edit`     | PUT      | 编辑帮扶方案         | `schemeId`、`target`（可选）、`measures`（可选） | 编辑后的方案 VO                            |
-| `/api/social-worker/scheme/export`   | GET      | 导出帮扶方案（PDF）  | `schemeId`                                       | `fileUrl`（PDF 下载链接）                  |
+| `/api/social-worker/scheme/generate` | POST     | 1 键生成 AI 服务方案 | `childId`、`workerId`                            | 服务方案 VO（`target`/`measures`/`cycle`） |
+| `/api/social-worker/scheme/edit`     | PUT      | 编辑服务方案         | `schemeId`、`target`（可选）、`measures`（可选） | 编辑后的方案 VO                            |
+| `/api/social-worker/scheme/export`   | GET      | 导出服务方案（PDF）  | `schemeId`                                       | `fileUrl`（PDF 下载链接）                  |
 
-#### （3）帮扶跟踪模块
+#### （3）服务跟踪模块
 
 | 接口路径                                | 请求方式 | 接口描述                     | 入参（DTO）                                             | 出参（data）                                             |
 | --------------------------------------- | -------- | ---------------------------- | ------------------------------------------------------- | -------------------------------------------------------- |
-| `/api/social-worker/track/add-log`      | POST     | 添加帮扶日志                 | `schemeId`、`week`、`completionStatus`、`recordContent` | 日志 ID                                                  |
-| `/api/social-worker/track/get-progress` | GET      | 获取方案帮扶进度（各周状态） | `schemeId`                                              | 进度列表 VO（`week`/`completionStatus`/`recordContent`） |
+| `/api/social-worker/track/add-log`      | POST     | 添加服务日志                 | `schemeId`、`week`、`completionStatus`、`recordContent` | 日志 ID                                                  |
+| `/api/social-worker/track/get-progress` | GET      | 获取方案服务进度（各周状态） | `schemeId`                                              | 进度列表 VO（`week`/`completionStatus`/`recordContent`） |
 
 ## 四、预留扩展设计修订
 
@@ -503,7 +503,7 @@ public class LivetalkingException extends RuntimeException {
 
 1. **轻量化设计**：移除独立数字人会话表，将 Session 关联逻辑嵌入现有`ai_chat_record`表，减少表结构冗余，符合 “快速交付” 需求；
 2. **职责清晰**：数字人 Session 的状态管理（如创建、过期、关闭）完全交由 livetalking 服务，后端仅负责 “关联标识存储 + 接口调用”，避免跨服务状态同步复杂度；
-3. **功能闭环**：儿童聊天流程中自动完成 “数字人 Session 创建→指令分发→画面流获取→记录存储”，同时保留 AI 分析、情感标签提取等核心能力，确保 “AI 陪伴 + 精准帮扶” 闭环完整；
+3. **功能闭环**：儿童聊天流程中自动完成 “数字人 Session 创建→指令分发→画面流获取→记录存储”，同时保留 AI 分析、情感标签提取等核心能力，确保 “AI 陪伴 + 精准服务” 闭环完整；
 4. **扩展性强**：通过预留字段、客户端接口封装，后期可快速支持数字人偏好设置、表情控制等功能，无需重构现有架构。
 
 该修订方案完全适配 “数字人 Sessions 由 livetalking 生成，仅维护画面传输与文本指令关联” 的需求，同时保持原有方案的轻量化与闭环优势，可直接支撑项目初期核心功能落地。

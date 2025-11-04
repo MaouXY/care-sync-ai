@@ -45,7 +45,7 @@ public class Knife4jConfig {
                         .title("CareSync AI API文档")
                         // 文档描述
                         .description("CareSync AI儿童关怀系统 - AI智能陪伴与社工精准介入的轻量化服务体系\n" +
-                                "通过安全合规的AI交互填补日常情感空白，依托结构化数据支撑社工开展针对性帮扶")
+                                "通过安全合规的AI交互填补日常情感空白，依托结构化数据支撑社工开展针对性服务")
                         // 版本信息
                         .version("1.0.0")
                         // 联系人信息

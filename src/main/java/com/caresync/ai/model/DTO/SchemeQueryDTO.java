@@ -3,7 +3,7 @@ package com.caresync.ai.model.DTO;
 import lombok.Data;
 
 /**
- * 帮扶方案列表查询请求参数
+ * 服务方案列表查询请求参数
  */
 @Data
 public class SchemeQueryDTO {

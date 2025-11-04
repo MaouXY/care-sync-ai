@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 帮扶方案响应结果
+ * 服务方案响应结果
  */
 @Data
 public class AssistSchemeVO implements Serializable {

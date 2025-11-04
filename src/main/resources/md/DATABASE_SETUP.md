@@ -79,8 +79,8 @@ psql -U postgres -d care_sync_db -f database_init_fixed.sql
 
 1. **child** - 存储儿童基本信息
 2. **ai_chat_record** - 存储儿童与AI的聊天记录
-3. **ai_assist_scheme** - 存储AI生成的帮扶方案
-4. **assist_track_log** - 存储帮扶进度日志
+3. **ai_assist_scheme** - 存储AI生成的服务方案
+4. **assist_track_log** - 存储服务进度日志
 5. **ai_analysis_log** - 存储AI分析记录
 6. **social_worker** - 存储社工信息
 

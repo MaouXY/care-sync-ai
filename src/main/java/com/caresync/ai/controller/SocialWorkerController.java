@@ -133,23 +133,23 @@ public class SocialWorkerController {
         return Result.success(null);
     }
 
-    // 帮扶方案模块 - 管理视角接口
+    // 服务方案模块 - 管理视角接口
 
     /**
-     * 生成AI帮扶方案（管理视角）
+     * 生成AI服务方案（管理视角）
      * @param generateSchemeDTO 生成方案DTO
-     * @return 帮扶方案VO
+     * @return 服务方案VO
      */
     @PostMapping("/scheme/admin-generate")
-    @Operation(summary = "生成AI帮扶方案（管理视角）", description = "根据儿童信息生成AI帮扶方案")
+    @Operation(summary = "生成AI服务方案（管理视角）", description = "根据儿童信息生成AI服务方案")
     public Result<AssistSchemeVO> generateScheme(@RequestBody GenerateSchemeDTO generateSchemeDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success(null);
     }
 
-    // 帮扶方案管理模块（管理视角）功能已移至AssistSchemeManageController控制器中
-    // 帮扶跟踪模块
+    // 服务方案管理模块（管理视角）功能已移至AssistSchemeManageController控制器中
+    // 服务跟踪模块
 
-    // 帮扶跟踪模块功能已移至AssistTrackController控制器中
+    // 服务跟踪模块功能已移至AssistTrackController控制器中
     // AI分析模块功能已移至AiAnalysisController控制器中
 }

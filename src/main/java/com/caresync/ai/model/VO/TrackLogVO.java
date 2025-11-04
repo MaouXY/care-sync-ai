@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 帮扶跟踪日志响应结果
+ * 服务跟踪日志响应结果
  */
 @Data
 public class TrackLogVO implements Serializable {
