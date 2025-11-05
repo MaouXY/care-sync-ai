@@ -216,7 +216,7 @@ CREATE TABLE ai_assist_scheme (
                                   ai_analysis_id BIGINT, -- 关联AI分析记录ID
                                   evaluation_index JSONB, -- 预留：评估指标
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                  update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,不可以自动更新，作为项目开始时间！！！
     -- 外键关联
                                   FOREIGN KEY (child_id) REFERENCES child(id) ON DELETE CASCADE,
                                   FOREIGN KEY (worker_id) REFERENCES social_worker(id) ON DELETE CASCADE,
