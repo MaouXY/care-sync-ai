@@ -19,7 +19,7 @@ public class AiAnalysisResultVO implements Serializable {
     private String triggerType;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-    
+
     // 扩展字段
     private String childName;
     private List<String> emotionTrendTags; // 情感趋势标签（对应图表X轴）
@@ -31,7 +31,7 @@ public class AiAnalysisResultVO implements Serializable {
     private List<String> keyFindings; // 关键发现列表（分析结果详情）
     private List<Recommendation> recommendations; // 建议列表（分析结果详情->服务计划生成依据）
     private Object aiStructInfo; // AI结构化数据（原始数据）
-    
+
     /**
      * 情感历史记录项
      */
@@ -40,7 +40,7 @@ public class AiAnalysisResultVO implements Serializable {
         private String date;
         private Map<String, Integer> scores;
     }
-    
+
     /**
      * 建议项
      */

@@ -43,7 +43,7 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
     public PageResult<AiAnalysisResultVO> getAiAnalysisResults(AiAnalysisQueryDTO aiAnalysisQueryDTO) {
         // 获取所有儿童信息
         List<Child> allChildren = childService.list();
-        
+
         // 创建分页查询对象，用于计算分页
         int page = aiAnalysisQueryDTO.getPage() != null ? aiAnalysisQueryDTO.getPage() : 1;
         int pageSize = aiAnalysisQueryDTO.getPageSize() != null ? aiAnalysisQueryDTO.getPageSize() : 10;
@@ -55,15 +55,15 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
                     AiAnalysisResultVO aiAnalysisResultVO = new AiAnalysisResultVO();
                     aiAnalysisResultVO.setChildId(child.getId());
                     aiAnalysisResultVO.setChildName(child.getName());
-                    
+
                     // 设置分析时间为child表中的ai_analysis_time
                     aiAnalysisResultVO.setCreateTime(child.getAiAnalysisTime());
-                    
+
                     // 解析aiStructInfo中的结构化信息
                     if (child.getAiStructInfo() != null) {
                         parseStructuredInfo(child.getAiStructInfo(), aiAnalysisResultVO);
                     }
-                    
+
                     return aiAnalysisResultVO;
                 })
                 // 应用过滤条件
@@ -109,11 +109,11 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
                     aiAnalysisResultVO.setChildId(child.getId());
                     aiAnalysisResultVO.setChildName(child.getName());
                     aiAnalysisResultVO.setCreateTime(child.getAiAnalysisTime());
-                    
+
                     if (child.getAiStructInfo() != null) {
                         parseStructuredInfo(child.getAiStructInfo(), aiAnalysisResultVO);
                     }
-                    
+
                     return aiAnalysisResultVO;
                 })
                 .filter(vo -> {
@@ -283,23 +283,23 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
             log("未找到ID为{}的儿童信息", id);
             return null;
         }
-        
+
         // 创建AI分析结果VO对象
         AiAnalysisResultVO aiAnalysisResultVO = new AiAnalysisResultVO();
-        
+
         // 设置基本信息
         aiAnalysisResultVO.setChildId(child.getId());
         aiAnalysisResultVO.setChildName(child.getName() + "(" + child.getAge() + "岁)");
         aiAnalysisResultVO.setCreateTime(child.getAiAnalysisTime());
-        
+
         // 直接设置aiStructInfo字段
         aiAnalysisResultVO.setAiStructInfo(child.getAiStructInfo());
-        
+
         // 解析aiStructInfo中的结构化信息
         if (child.getAiStructInfo() != null) {
             parseStructuredInfo(child.getAiStructInfo(), aiAnalysisResultVO);
         }
-        
+
         return aiAnalysisResultVO;
     }
 

@@ -17,32 +17,32 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2025-11-02
  */
 public interface ISocialWorkerService extends IService<SocialWorker> {
-    
+
     /**
      * 社工登录
      * @param socialWorkerLoginDTO 登录信息
      * @return 登录结果
      */
     LoginVO login(SocialWorkerLoginDTO socialWorkerLoginDTO);
-    
+
     /**
      * 获取社工个人信息
      * @param id 社工ID
      * @return 社工信息
      */
     SocialWorkerInfoVO getSocialWorkerInfo(Long id);
-    
+
     /**
      * 更新社工个人信息
      * @param updateSocialWorkerInfoDTO 更新信息
      */
     void updateSocialWorkerInfo(UpdateSocialWorkerInfoDTO updateSocialWorkerInfoDTO);
-    
+
     /**
      * 登出
      */
     void logout();
-    
+
     /**
      * 获取社工首页信息
      * @param workerId 社工ID

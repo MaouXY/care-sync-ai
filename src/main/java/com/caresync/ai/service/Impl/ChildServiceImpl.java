@@ -38,7 +38,7 @@ import java.util.Map;
  */
 @Service
 public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements IChildService {
-    
+
     @Autowired
     private JwtConfig jwtConfig;
 
@@ -52,31 +52,31 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     public LoginVO login(ChildLoginDTO childLoginDTO) {
         String childNo = childLoginDTO.getChildNo();
         String verifyCode = childLoginDTO.getVerifyCode();
-        
+
         // 查询儿童信息
         LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Child::getChildNo, childNo);
         Child child = this.getOne(queryWrapper);
-        
+
         // 验证儿童是否存在以及验证码是否正确
         if (child == null || !verifyCode.equals(child.getVerifyCode())) {
             throw new BusinessException(CodeConstant.INVALID_CREDENTIALS_CODE,MessageConstant.PASSWORD_ERROR);
         }
-        
+
         // 生成JWT令牌
         Map<String, Object> claims = new HashMap<>();
         claims.put(JwtClaimsConstant.USER_ID, child.getId());
         claims.put(JwtClaimsConstant.USER_NAME, child.getName());
         claims.put(JwtClaimsConstant.USER_ROLE, 1); // 1表示儿童角色
         String token = JwtUtil.createJWT(jwtConfig.getSecret(), jwtConfig.getExpiration() * 1000, claims);
-        
+
         // 构建登录响应
         LoginVO loginVO = new LoginVO();
         loginVO.setId(child.getId());
         loginVO.setName(child.getName());
         loginVO.setToken(token);
         loginVO.setRole(1);
-        
+
         return loginVO;
     }
 
@@ -91,7 +91,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         if (child == null) {
             throw new BusinessException(CodeConstant.NOT_FOUND_CODE,"儿童不存在");
         }
-        
+
         ChildInfoVO childInfoVO = new ChildInfoVO();
         BeanUtils.copyProperties(child, childInfoVO);
         return childInfoVO;
@@ -105,7 +105,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     public void updateChildInfo(UpdateChildInfoDTO updateChildInfoDTO) {
         Child child = new Child();
         BeanUtils.copyProperties(updateChildInfoDTO, child);
-        
+
         boolean result = this.updateById(child);
         if (!result) {
             throw new BusinessException(CodeConstant.FAIL_CODE,"更新儿童信息失败");
@@ -156,35 +156,35 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
      */
     private LambdaQueryWrapper<Child> buildChildQueryWrapper(ChildQueryDTO childQueryDTO) {
         LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
-        
+
         // 儿童编号模糊查询
         if (childQueryDTO.getChildNo() != null) {
             queryWrapper.like(Child::getChildNo, childQueryDTO.getChildNo());
         }
-        
+
         // 儿童姓名模糊查询
         if (childQueryDTO.getName() != null) {
             queryWrapper.like(Child::getName, childQueryDTO.getName());
         }
-        
+
         // 最小年龄查询
         if (childQueryDTO.getMinAge() != null) {
             queryWrapper.ge(Child::getAge, childQueryDTO.getMinAge());
         }
-        
+
         // 最大年龄查询
         if (childQueryDTO.getMaxAge() != null) {
             queryWrapper.le(Child::getAge, childQueryDTO.getMaxAge());
         }
-        
+
         // 是否有新聊天记录查询
         if (childQueryDTO.getHasNewChat() != null) {
             queryWrapper.eq(Child::getHasNewChat, childQueryDTO.getHasNewChat());
         }
-        
+
         // 按创建时间倒序排序
         queryWrapper.orderByDesc(Child::getCreateTime);
-        
+
         return queryWrapper;
     }
 }

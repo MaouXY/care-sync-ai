@@ -15,14 +15,14 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2025-11-02
  */
 public interface IAiAnalysisLogService extends IService<AiAnalysisLog> {
-    
+
     /**
      * 获取AI分析结果列表
      * @param aiAnalysisQueryDTO 查询条件，包含儿童姓名、潜在问题、情感趋势等查询参数（均允许空值）
      * @return 分页结果
      */
     PageResult<AiAnalysisResultVO> getAiAnalysisResults(AiAnalysisQueryDTO aiAnalysisQueryDTO);
-    
+
     /**
      * 获取AI分析结果详情
      * @param id 儿童ID

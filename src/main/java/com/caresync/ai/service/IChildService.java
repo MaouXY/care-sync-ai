@@ -19,32 +19,32 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2025-11-02
  */
 public interface IChildService extends IService<Child> {
-    
+
     /**
      * 儿童登录
      * @param childLoginDTO 登录信息
      * @return 登录结果
      */
     LoginVO login(ChildLoginDTO childLoginDTO);
-    
+
     /**
      * 获取儿童个人信息
      * @param id 儿童ID
      * @return 儿童信息
      */
     ChildInfoVO getChildInfo(Long id);
-    
+
     /**
      * 更新儿童个人信息
      * @param updateChildInfoDTO 更新信息
      */
     void updateChildInfo(UpdateChildInfoDTO updateChildInfoDTO);
-    
+
     /**
      * 登出
      */
     void logout();
-    
+
     /**
      * 获取儿童列表
      * @param childQueryDTO 查询条件
