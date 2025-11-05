@@ -391,6 +391,10 @@ CREATE INDEX idx_scenario_name ON simulation_scenario(scenario_name);
 --   }
 -- }
 
+-- {"age": 10,"gender": "female","personality_traits": ["内向", "敏感", "想象力丰富"],"speech_pattern": "简短，有时会重复关键词", "emotional_state": "孤独，渴望关注","background_story": "父母外出务工，与奶奶一起生活，很少有机会与人交流", "interests": ["画画", "听故事"], "fears": ["孤独", "黑暗"], "communication_preferences": { "preferred_topics": ["童话故事", "小动物", "学校生活"],"avoid_topics": ["父母离开", "批评"],"response_style": "需要引导，安全感建立后才会多说话"}}
+
+-- {"age": 8,"gender": "female","personality_traits": ["开朗", "情绪稳定", "积极乐观", "社交能力强"],"speech_pattern": "积极主动，表达清晰，对编程和数学相关话题会更兴奋健谈","emotional_state": "平静，开心，对编程和数学学习感到兴奋","background_story": "性格开朗，情绪稳定，社交互动积极，能够主动与人交流，对编程和数学表现出浓厚兴趣且学习能力强","interests": ["编程学习", "数学挑战"],"fears": ["孤独", "黑暗"],"communication_preferences": {"preferred_topics": ["编程入门知识", "有趣的数学问题", "编程学习资源", "数学挑战任务"],"avoid_topics": ["父母离开", "批评"],"response_style": "积极互动，乐于探讨编程和数学相关内容，对推荐的学习资源和任务会表现出较高热情"}}
+
 -- 10. 创建训练会话表（training_session）
 CREATE TABLE training_session (
                                   id BIGSERIAL PRIMARY KEY, -- 会话ID
@@ -403,7 +407,6 @@ CREATE TABLE training_session (
                                   overall_score DECIMAL(3,1), -- 总体评分（0-10分）
                                   create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                   update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     -- 外键关联
                                   FOREIGN KEY (worker_id) REFERENCES social_worker(id) ON DELETE CASCADE,
                                   FOREIGN KEY (scenario_id) REFERENCES simulation_scenario(id) ON DELETE CASCADE

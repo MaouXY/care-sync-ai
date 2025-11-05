@@ -142,6 +142,24 @@
             <artifactId>volcengine-java-sdk-ark-runtime</artifactId>
             <version>0.2.36</version>
         </dependency>
+        
+        <!-- Apache Commons Collections 工具类库 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.caresync</groupId>
+            <artifactId>care-sync-ai</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <!--PGobject依赖-->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.6.0</version>
+        </dependency>
     </dependencies>
 
     <build>

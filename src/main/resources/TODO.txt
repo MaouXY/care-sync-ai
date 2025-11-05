@@ -43,7 +43,12 @@
         - 方案状态分布
         - 服务进度趋势 假数据就完啦
         - 显示 方案状态列表 target、child_id（获取名字、年龄）、scheme_status、完成进度（查询ai_suggestions.measures_suggest统计该方案中pending（未完成）、in_progress（算完成半个）、completed（完成）的数量，计算完成百分比），剩余时间（cycle-now-update_time）
-    - AI模拟训练
+    - AI模拟训练-选择训练场景
+        - 显示 模拟训练场景列表 scenario_name、scenario_type、description、difficulty_level
+        - 创建训练会话表
+    - AI模拟训练-训练会话进行中
+        - 大模型交互，发送3次LLM请求，一次模拟儿童的回复，一次生成结构化数据emotion_analysis，一次回复指导意见
+
 // TODO 分页查询的total还是0 骂骂咧咧
 # 儿童端 (ChildController) APP移动端
 # 儿童端接口 (ChildController) - 移动端

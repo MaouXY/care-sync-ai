@@ -25,7 +25,7 @@ public class ArkUtil {
     private String botId;
 
     // TODO 区分ai，因为需要使用不同的prompts
-    public ChatContent botChat(ChatRequest request) {
+    public ChatContent botChat(ChatRequest request,String systemPrompt) {
         System.out.println(LocalDate.now() + " " + request.toString());
 
         // 创建消息列表
@@ -33,7 +33,7 @@ public class ArkUtil {
         // 添加系统消息
         ChatMessage systemMessage = ChatMessage.builder()
                 .role(ChatMessageRole.SYSTEM)
-                .content("")
+                .content(systemPrompt)
                 .build();
         messages.add(systemMessage);
 

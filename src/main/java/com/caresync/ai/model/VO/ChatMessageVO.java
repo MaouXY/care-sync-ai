@@ -13,7 +13,7 @@ public class ChatMessageVO implements Serializable {
     private Long id;
     private Long childId;
     private String sessionId;
-    private String digiSessionId;
+    private String digiSessionId;// 数字会话ID
     private Integer roundNum;
     private String contentType;
     private String content;

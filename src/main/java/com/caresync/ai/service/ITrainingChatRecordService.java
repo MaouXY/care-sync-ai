@@ -13,4 +13,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ITrainingChatRecordService extends IService<TrainingChatRecord> {
 
+    public void roundNumAdd(Long sessionId);
+
 }

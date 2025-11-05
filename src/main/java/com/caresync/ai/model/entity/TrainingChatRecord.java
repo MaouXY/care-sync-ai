@@ -5,11 +5,11 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.caresync.ai.handler.JsonbTypeHandler;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 /**
  * <p>
@@ -19,8 +19,11 @@ import lombok.Setter;
  * @author Maou
  * @since 2025-11-04
  */
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @TableName("training_chat_record")
 public class TrainingChatRecord extends Model<TrainingChatRecord> {
 
@@ -44,8 +47,8 @@ public class TrainingChatRecord extends Model<TrainingChatRecord> {
     @TableField("is_ai_reply")
     private Boolean aiReply;
 
-    @TableField("emotion_analysis")
-    private Object emotionAnalysis;
+    @TableField(value = "emotion_analysis", typeHandler = JsonbTypeHandler.class)
+    private String emotionAnalysis;
 
     @TableField("ai_guidance")
     private String aiGuidance;
