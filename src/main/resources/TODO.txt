@@ -6,17 +6,17 @@
         - 登录功能（已实现）
         - 登出功能（已实现）
     - 社工首页
-        - 浮动弹出，数字逐渐增加的动画。(TODO)
+        - 浮动弹出，数字逐渐增加的动画。（已实现）(TODO 返回的数据还有问题)
         - 第一行的数据先写死
         - 第二行查询所有的和该社工绑定的儿童，显示情感趋势分析（aiStructInfo.emotion_scores所有儿童的平均值），儿童情况分布（aiStructInfo.potential_problems）
         - 待处理任务，显示该社工的AI服务方案列表展示target和worker_adjust_reason（scheme_status需要是IN_PROGRESS状态的方案，按照结束时间排序）
         - 近期活动，显示最近完成是子任务 (子任务记录表，AI服务进度日志表)
-    - 个人中心
+    - 个人中心（已实现）
         - 显示该社工的个人信息（姓名、手机号、邮箱等、服务范围？）
         - 修改密码功能（已实现）？
-    - AI分析结果
+    - AI分析结果（已实现）
         - 显示AI分析结果列表（分页查询），序号、儿童名字（年龄）、潜在问题、分析日期、emotion_trend、操作按钮（查看详情）
-    - AI分析详情
+    - AI分析详情（已实现）
         - 显示该儿童的AI分析详情 potential_problems、emotion_trend、core_needs
         - 显示儿童姓名（年龄）
         - 显示分析摘要 description
@@ -25,12 +25,21 @@
         - 关键发现 key_findings
         - 建议与干预策略 recommendations
         - AI结构化数据 ai_struct_info
-    - 儿童管理
+    - 儿童管理（已实现）
         - 显示儿童信息列表（分页查询），序号、儿童名字、性别、年龄、联系电话、风险等级（risk_level）、帮扶状态（service_status）、操作按钮（查看详情）
-    - 儿童详情
+    - 儿童详情（已实现）
         - 显示该儿童的基本信息（姓名、性别、年龄、联系电话等）
         - 显示该儿童的AI分析结果、曲线图emotion_history、指标emotion_scores、分析摘要description TODO
         - 当前服务计划（多表查询，服务计划表的服务目标）、最近互动记录（最近完成的子任务记录）
+    - 服务方案管理
+        - 显示方案列表ai_assist_scheme，id、target、child_id（获取儿童名字）、scheme_status、create_time、cycle、worker_id（负责人，社工名字）
+    - 服务方案详情
+        — 方案基本信息（target、create_time、cycle、worker_id（获取社工名字））；
+        儿童信息child_id（name、age、gender、risk_level、ai_struct_info.emotion_scores）;
+        方案目标 ai_suggestions.target_suggest;
+        方案进度 ai_suggestions.measures_suggest;
+    - 帮扶跟踪管理
+    - AI模拟训练
 
 # 儿童端 (ChildController) APP移动端
 # 儿童端接口 (ChildController) - 移动端

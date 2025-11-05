@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 import java.time.LocalDate;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,8 +24,8 @@ import lombok.Setter;
  * @author Maou
  * @since 2025-11-02
  */
-@Getter
-@Setter
+@EqualsAndHashCode(callSuper = true)
+@Data
 @TableName("child")
 @Schema(description = "儿童实体类")
 public class Child extends Model<Child> {
