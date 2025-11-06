@@ -5,6 +5,7 @@ import com.caresync.ai.model.DTO.CreateChildDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
+import com.caresync.ai.model.VO.ChildVO;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.result.Result;
 import com.caresync.ai.service.IChildService;

@@ -25,7 +25,7 @@ public class SecurityConfig {
                 // 配置URL访问权限
                 .authorizeHttpRequests(authorize -> authorize //TODO 需要重新配置
                         // 允许公开访问的路径
-                        .requestMatchers("/user/register", "/api/social-worker/login", "/api/social-worker/logout", "/error","/common/upload","/api/judge0/webhook/callback").permitAll()
+                        .requestMatchers("/user/register", "/api/social-worker/login", "/api/social-worker/logout","/api/child/login", "/error","/common/upload","/api/judge0/webhook/callback").permitAll()
                         // 允许Knife4J相关路径访问
                         .requestMatchers("/doc.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**", "/swagger-resources/**").permitAll()
                         // 允许静态资源访问 - 修复了URL模式

@@ -1,16 +1,14 @@
 package com.caresync.ai.controller;
 
-import com.caresync.ai.model.DTO.ChildLoginDTO;
-import com.caresync.ai.model.DTO.ChildQueryDTO;
-import com.caresync.ai.model.DTO.CreateChildDTO;
-import com.caresync.ai.model.DTO.EmergencyCallDTO;
-import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
-import com.caresync.ai.model.VO.ChildInfoVO;
-import com.caresync.ai.model.VO.LoginVO;
-import com.caresync.ai.model.VO.SessionVO;
+import com.caresync.ai.context.BaseContext;
+import com.caresync.ai.livetalking.LiveTalkingService;
+import com.caresync.ai.model.DTO.*;
+import com.caresync.ai.model.VO.*;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.result.Result;
+import com.caresync.ai.service.IAiChatRecordService;
 import com.caresync.ai.service.IChildService;
+import com.caresync.ai.service.Impl.AiChatRecordServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +27,12 @@ public class ChildController {
     @Autowired
     private IChildService childService;
 
+    @Autowired
+    private LiveTalkingService liveTalkingService;
+
+    @Autowired
+    private IAiChatRecordService AiChatRecordService;
+
     /**
      * 儿童登录
      * @param childLoginDTO 儿童登录DTO
@@ -37,8 +41,8 @@ public class ChildController {
     @PostMapping("/login")
     @Operation(summary = "儿童登录", description = "儿童ID+4位验证码登录")
     public Result<LoginVO> login(@RequestBody ChildLoginDTO childLoginDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success(null);
+        LoginVO loginVO = childService.login(childLoginDTO);
+        return Result.success(loginVO);
     }
 
     /**
@@ -47,9 +51,12 @@ public class ChildController {
      */
     @GetMapping("/info")
     @Operation(summary = "获取儿童个人信息", description = "获取儿童基本信息")
-    public Result<ChildInfoVO> getChildInfo() {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success(null);
+    public Result<ChildVO> getChildInfo() {
+        // 从上下文中获取当前登录儿童的ID
+        Long childId = BaseContext.getCurrentId();
+        // 调用服务层获取儿童信息
+        ChildVO childVO = childService.getChild(childId);
+        return Result.success(childVO);
     }
 
     /**
@@ -59,9 +66,13 @@ public class ChildController {
      */
     @PostMapping("/chat/send")
     @Operation(summary = "发送聊天消息", description = "文字/语音输入")
-    public Result sendChatMessage(@RequestBody com.caresync.ai.model.DTO.ChatMessageDTO chatMessageDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
+    public Result<ChildChatMessageVO> sendChatMessage(@RequestBody ChatMessageDTO chatMessageDTO) {
+        try {
+            ChildChatMessageVO childChatMessageVO = liveTalkingService.sendChatMessage(chatMessageDTO);
+            return Result.success(childChatMessageVO);
+        } catch (Exception e) {
+            return Result.error("发送聊天消息失败");
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
+import com.caresync.ai.model.VO.ChildVO;
 import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.result.PageResult;
@@ -26,6 +27,13 @@ public interface IChildService extends IService<Child> {
      * @return 登录结果
      */
     LoginVO login(ChildLoginDTO childLoginDTO);
+
+     /**
+     * 获取儿童个人信息
+     * @param id 儿童ID
+     * @return 儿童信息VO
+     */
+    ChildVO getChild(Long id);
 
     /**
      * 获取儿童个人信息

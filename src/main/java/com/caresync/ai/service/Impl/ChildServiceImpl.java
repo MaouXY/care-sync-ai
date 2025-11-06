@@ -13,6 +13,7 @@ import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
+import com.caresync.ai.model.VO.ChildVO;
 import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.ChildMapper;
@@ -20,6 +21,8 @@ import com.caresync.ai.result.PageResult;
 import com.caresync.ai.service.IChildService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.utils.JwtUtil;
+import com.caresync.ai.utils.PasswordEncoderUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ import java.util.Map;
  * @author Maou
  * @since 2025-11-02
  */
+@Slf4j
 @Service
 public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements IChildService {
 
@@ -51,12 +55,14 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     @Override
     public LoginVO login(ChildLoginDTO childLoginDTO) {
         String childNo = childLoginDTO.getChildNo();
-        String verifyCode = childLoginDTO.getVerifyCode();
+        String verifyCode = PasswordEncoderUtil.encode(childLoginDTO.getVerifyCode());
 
         // 查询儿童信息
         LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Child::getChildNo, childNo);
         Child child = this.getOne(queryWrapper);
+        log.info("输入密码: {}", verifyCode);
+        log.info("数据库密码: {}", child.getVerifyCode());
 
         // 验证儿童是否存在以及验证码是否正确
         if (child == null || !verifyCode.equals(child.getVerifyCode())) {
@@ -78,6 +84,23 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         loginVO.setRole(1);
 
         return loginVO;
+    }
+
+    /**
+     * 获取儿童信息-儿童端
+     * @param id 儿童ID
+     * @return 儿童信息VO
+     */
+    @Override
+    public ChildVO getChild(Long id) {
+        Child child = this.getById(id);
+        if (child == null) {
+            throw new BusinessException(CodeConstant.NOT_FOUND_CODE,"儿童不存在");
+        }
+
+        ChildVO childVO = new ChildVO();
+        BeanUtils.copyProperties(child, childVO);
+        return childVO;
     }
 
     /**

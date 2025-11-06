@@ -23,7 +23,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")
                 // 排除不需要拦截的路径
                 .excludePathPatterns( //TODO 需要重新配置
-                        "/user/register", "/api/social-worker/login", "/api/social-worker/logout",
+                        "/user/register", "/api/social-worker/login", "/api/social-worker/logout","/api/child/login",
                         "/error", "/common/upload", "/api/judge0/webhook/callback",
                         "/static/**", "/resources/**"
                 );

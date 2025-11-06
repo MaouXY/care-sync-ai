@@ -9,6 +9,8 @@ import com.caresync.ai.handler.JsonbTypeHandler;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Map;
+
 import lombok.*;
 
 /**

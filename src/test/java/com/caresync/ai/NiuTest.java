@@ -15,7 +15,7 @@ import java.io.IOException;
 public class NiuTest {
     @Test
     public void testPSWEncrypt() {
-        String psw = "123456";
+        String psw = "5678";
         String encryptPsw = PasswordEncoderUtil.encode(psw);
         System.out.println(encryptPsw);
     }

@@ -30,7 +30,7 @@ CREATE TABLE child (
                        phone VARCHAR(20), -- 联系电话
                        guardian_name VARCHAR(50), -- 监护人姓名
                        guardian_phone VARCHAR(20), -- 监护人电话
-                       verify_code VARCHAR(4) NOT NULL, -- 4位登录验证码（BCrypt加密存储）
+                       verify_code VARCHAR(30) NOT NULL, -- 4位登录验证码（BCrypt加密存储）
                        has_new_chat BOOLEAN DEFAULT FALSE, -- 是否有新聊天记录（社工端列表标注）
                        ai_struct_info JSONB, -- AI结构化信息：情感趋势、核心需求等
                        ai_analysis_time TIMESTAMP, -- 最后一次AI分析时间（避免重复分析）
@@ -184,7 +184,7 @@ VALUES (
 CREATE TABLE ai_chat_record (
                                 id BIGSERIAL PRIMARY KEY,
                                 child_id BIGINT NOT NULL, -- 关联儿童ID
-                                session_id VARCHAR(50) NOT NULL, -- 业务会话ID（儿童与AI的聊天会话）
+                                session_id VARCHAR(50) NOT NULL, -- 数字人会话ID（儿童与AI的聊天会话）
                                 digi_session_id VARCHAR(50) NOT NULL, -- livetalking生成的数字人Session ID
                                 round_num INT NOT NULL, -- 会话内轮次（1、2、3...）
                                 content_type VARCHAR(10) NOT NULL CHECK (content_type IN ('VOICE', 'TEXT')), -- 内容类型

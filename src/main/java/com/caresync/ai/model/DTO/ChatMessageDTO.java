@@ -1,5 +1,6 @@
 package com.caresync.ai.model.DTO;
 
+import com.caresync.ai.model.ai.ChatRequest;
 import lombok.Data;
 
 /**
@@ -7,7 +8,7 @@ import lombok.Data;
  */
 @Data
 public class ChatMessageDTO {
-    private String content; // 聊天内容
+    private ChatRequest chatRequest;
     private String contentType; // 内容类型：VOICE, TEXT
     private String sessionId; // 会话ID
     private String digiSessionId; // 数字人会话ID
