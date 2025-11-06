@@ -29,7 +29,7 @@ public class ArkUtil {
         // 默认使用空的系统提示词
         return botChat(request, "");
     }
-    
+
     // 重载方法，支持自定义系统提示词
     public ChatContent botChat(ChatRequest request, String systemPrompt) {
         try {
