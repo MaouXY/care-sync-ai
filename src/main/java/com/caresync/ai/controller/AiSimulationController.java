@@ -64,7 +64,7 @@ public class AiSimulationController {
 
     @Autowired
     private ObjectMapper objectMapper;
-    
+
     @Autowired
     private ITrainingEvaluationService trainingEvaluationService;
 
@@ -77,15 +77,15 @@ public class AiSimulationController {
     public Result<List<SimulationScenarioVO>> getScenarioList() {
         try {
             logger.info("开始获取模拟训练场景列表");
-            
+
             // 查询所有公开的场景
             List<SimulationScenario> scenarios = simulationScenarioService.lambdaQuery()
                     .eq(SimulationScenario::getIsPublic, true)
                     .orderByDesc(SimulationScenario::getCreateTime)
                     .list();
-            
+
             logger.info("成功获取到{}个模拟训练场景", scenarios.size());
-            
+
             // 转换为VO列表
             List<SimulationScenarioVO> scenarioVOs = new ArrayList<>();
             for (SimulationScenario scenario : scenarios) {
@@ -95,10 +95,10 @@ public class AiSimulationController {
                 vo.setScenarioType(scenario.getScenarioType());
                 vo.setDescription(scenario.getDescription());
                 vo.setDifficultyLevel(scenario.getDifficultyLevel());
-                
+
                 scenarioVOs.add(vo);
             }
-            
+
             logger.info("成功转换为{}个SimulationScenarioVO对象", scenarioVOs.size());
             return Result.success(scenarioVOs);
         } catch (Exception e) {
@@ -117,23 +117,23 @@ public class AiSimulationController {
     public Result<TrainingSessionVO> startTrainingSession(@RequestBody StartTrainingSessionDTO startTrainingSessionDTO) {
         try {
             logger.info("开始创建新的训练会话，场景ID: {}", startTrainingSessionDTO.getScenarioId());
-            
+
             // 获取当前登录社工的ID
             Long workerId = BaseContext.getCurrentId();
             if (workerId == null) {
                 logger.error("未获取到当前登录社工信息");
                 return Result.error("未登录，请先登录");
             }
-            
+
             logger.info("当前登录社工ID: {}", workerId);
-            
+
             // 校验场景是否存在
             SimulationScenario scenario = simulationScenarioService.getById(startTrainingSessionDTO.getScenarioId());
             if (scenario == null) {
                 logger.error("场景不存在，场景ID: {}", startTrainingSessionDTO.getScenarioId());
                 return Result.error("选择的场景不存在");
             }
-            
+
             // 创建训练会话实体
             TrainingSession trainingSession = new TrainingSession();
             trainingSession.setWorkerId(workerId);
@@ -141,20 +141,20 @@ public class AiSimulationController {
             trainingSession.setSessionStatus("IN_PROGRESS"); // 设置会话状态为进行中
             trainingSession.setStartTime(LocalDateTime.now()); // 设置开始时间为当前时间
             trainingSession.setTotalRounds(0); // 初始对话轮次为0
-            
+
             // 保存训练会话
             boolean saved = trainingSessionService.save(trainingSession);
             if (!saved) {
                 logger.error("创建训练会话失败");
                 return Result.error("创建训练会话失败，请重试");
             }
-            
+
             logger.info("成功创建训练会话，会话ID: {}", trainingSession.getId());
-            
+
             // 转换为VO返回
             TrainingSessionVO trainingSessionVO = new TrainingSessionVO();
             BeanUtils.copyProperties(trainingSession, trainingSessionVO);
-            
+
             return Result.success(trainingSessionVO);
         } catch (Exception e) {
             logger.error("创建训练会话异常: {}", e.getMessage());
@@ -173,7 +173,7 @@ public class AiSimulationController {
     public Result<TrainingChatResponseVO> sendTrainingMessage(@RequestBody SendTrainingMessageDTO sendTrainingMessageDTO) {
         try {
             logger.info("收到训练消息，会话ID: {}, 内容: {}", sendTrainingMessageDTO.getSessionId(), sendTrainingMessageDTO.getPrompt());
-            
+
             // 1. 验证会话是否存在
             Long sessionId = sendTrainingMessageDTO.getSessionId();
             TrainingSession session = trainingSessionService.getById(sessionId);
@@ -189,21 +189,22 @@ public class AiSimulationController {
                     .contentType("TEXT")
                     .content(sendTrainingMessageDTO.getPrompt())
                     .aiReply(false) // 社工消息
+                    .aiGuidance("")
                     .build();
-            
+
             trainingChatRecordService.save(workerMessage);
             logger.info("保存社工消息成功，记录ID: {}", workerMessage.getId());
-            
+
             // 4. 调用大模型进行三次交互
-            
+
             // 4.1 第一次调用：模拟儿童回复
             String childReply = getChildReply(sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
             logger.info("模拟儿童回复: {}", childReply);
-            
+
             // 4.2 第二次调用：生成情感分析
             String emotionAnalysisJson = getEmotionAnalysis(childReply, sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
             logger.info("情感分析结果: {}", emotionAnalysisJson);
-            
+
             // 检查emotionAnalysisJson是否为null或空
             logger.info("emotionAnalysisJson是否为null: {}", emotionAnalysisJson == null);
             if (emotionAnalysisJson != null) {
@@ -213,41 +214,27 @@ public class AiSimulationController {
                 emotionAnalysisJson = "{}";
                 logger.info("使用空JSON字符串作为情感分析结果");
             }
-            
+
             // 4.3 第三次调用：生成指导意见
             String aiGuidance = getAiGuidance(childReply,emotionAnalysisJson,sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
             logger.info("AI指导意见: {}", aiGuidance);
-            
+
             // 5. 保存AI回复的消息（儿童模拟回复）
             try {
-                // 将情感分析JSON字符串转换为EmotionAnalysis对象
-                Object emotionAnalysisObj = null;
-                if (emotionAnalysisJson != null && !emotionAnalysisJson.isEmpty()) {
-                    try {
-                        // 创建ObjectMapper实例
-                        com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                        // 将JSON字符串转换为Map对象
-                        emotionAnalysisObj = objectMapper.readValue(emotionAnalysisJson, java.util.Map.class);
-                    } catch (Exception e) {
-                        logger.error("转换情感分析JSON失败: {}", e.getMessage());
-                        // 如果转换失败，设置为null
-                        emotionAnalysisObj = null;
-                    }
-                }
-                
                 TrainingChatRecord aiReplyMessage = TrainingChatRecord.builder()
                         .sessionId(sessionId)
-                        .roundNum(session.getTotalRounds()+1)
+                        .roundNum(session.getTotalRounds())
                         .contentType("TEXT")
                         .content(childReply)
                         .aiReply(true)
-                        .emotionAnalysis((String) emotionAnalysisObj)
+                        //.emotionAnalysis((Map<String, Object>) emotionAnalysisObj)
+                        .emotionAnalysis(emotionAnalysisJson)
                         .aiGuidance(aiGuidance != null ? aiGuidance : "")
                         .build();
-                
+
                 trainingChatRecordService.save(aiReplyMessage);
                 logger.info("保存AI回复消息成功，记录ID: {}", aiReplyMessage.getId());
-                
+
                 // 6. 更新会话的总轮次
                 if (session != null) {
                     session.setTotalRounds(session.getTotalRounds()+2);
@@ -260,7 +247,7 @@ public class AiSimulationController {
                 logger.error("保存AI回复消息或更新会话轮次异常: {}", e.getMessage(), e);
                 // 继续执行，确保返回响应给客户端
             }
-            
+
             // 7. 构建返回的VO对象
             TrainingChatResponseVO responseVO = new TrainingChatResponseVO();
             responseVO.setSessionId(sessionId);
@@ -268,14 +255,14 @@ public class AiSimulationController {
             responseVO.setEmotionAnalysis(emotionAnalysisJson);
             responseVO.setAiGuidance(aiGuidance);
             responseVO.setTimestamp(LocalDateTime.now());
-            
+
             return Result.success(responseVO);
         } catch (Exception e) {
             logger.error("发送训练消息异常: {}", e.getMessage());
             return Result.error("发送消息失败，请重试");
         }
     }
-    
+
     /**
      * 获取模拟儿童回复
      */
@@ -295,10 +282,10 @@ public class AiSimulationController {
 
             // 构建聊天请求
             ChatRequest chatRequest = ChatRequest.builder()
-                .prompt(workerMessage)
-                .history(history)
-                .build();
-            
+                    .prompt(workerMessage)
+                    .history(history)
+                    .build();
+
             // 调用ArkUtil获取儿童回复（修改系统消息）
             ChatContent chatContent = arkUtil.botChat(chatRequest, systemPrompt);
             return chatContent.getContent();
@@ -308,7 +295,7 @@ public class AiSimulationController {
             return "我知道了...";
         }
     }
-    
+
     /**
      * 获取情感分析结果
      */
@@ -316,11 +303,11 @@ public class AiSimulationController {
         try {
             // 设置系统提示词，引导模型生成结构化的情感分析结果
             String systemPrompt = "你需要对儿童的回复进行情感分析，按照指定的JSON格式输出结果。" +
-                "格式要求：{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}。" +
-                "情绪名称可以是：开心、伤心、孤独、焦虑、生气、害怕、平静等。" +
-                "置信度范围是0-100的整数。" +
-                "情绪强度是0-100的整数，表示整体情绪的强烈程度。" +
-                "请只输出JSON格式的结果，不要添加其他说明文字。";
+                    "格式要求：{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}。" +
+                    "情绪名称可以是：开心、伤心、孤独、焦虑、生气、害怕、平静等。" +
+                    "置信度范围是0-100的整数。" +
+                    "情绪强度是0-100的整数，表示整体情绪的强烈程度。" +
+                    "请只输出JSON格式的结果，不要添加其他说明文字。";
 
             // 添加当前用户消息
             ChatMessage userMessage = ChatMessage.builder()
@@ -338,10 +325,10 @@ public class AiSimulationController {
 
             // 构建聊天请求
             ChatRequest chatRequest = ChatRequest.builder()
-                .prompt(systemPrompt)
-                .history(history)
-                .build();
-            
+                    .prompt(systemPrompt)
+                    .history(history)
+                    .build();
+
             // 调用ArkUtil获取情感分析结果
             ChatContent chatContent = arkUtil.botChat(chatRequest,systemPrompt);
             return chatContent.getContent();
@@ -351,7 +338,7 @@ public class AiSimulationController {
             return "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}";
         }
     }
-    
+
     /**
      * 获取AI指导意见
      */
@@ -359,8 +346,8 @@ public class AiSimulationController {
         try {
             // 设置系统提示词，引导模型生成社工指导意见
             String systemPrompt = "你是一名专业的儿童心理辅导专家，需要根据社工和儿童的对话，为社工提供指导意见。" +
-                "请分析儿童的情绪和需求，给出具体、实用的建议，帮助社工更好地与儿童沟通和提供帮助。" +
-                "建议要温暖、支持性，符合儿童心理发展特点。回复需要简短，直至要点。";
+                    "请分析儿童的情绪和需求，给出具体、实用的建议，帮助社工更好地与儿童沟通和提供帮助。" +
+                    "建议要温暖、支持性，符合儿童心理发展特点。回复需要简短，直至要点。";
 
             // 添加当前用户消息
             ChatMessage userMessage = ChatMessage.builder()
@@ -386,10 +373,10 @@ public class AiSimulationController {
             // 构建聊天请求
             String prompt = "现在输出你对社工的指导意见：" + childReply;
             ChatRequest chatRequest = ChatRequest.builder()
-                .prompt(prompt)
-                .history(history)
-                .build();
-            
+                    .prompt(prompt)
+                    .history(history)
+                    .build();
+
             // 调用ArkUtil获取指导意见
             ChatContent chatContent = arkUtil.botChat(chatRequest, systemPrompt);
             return chatContent.getContent();
@@ -413,18 +400,6 @@ public class AiSimulationController {
     }
 
     /**
-     * 获取AI指导意见
-     * @param sessionId 会话ID
-     * @return AI指导意见VO
-     */
-    @GetMapping("/advice/{sessionId}")
-    @Operation(summary = "获取AI指导意见", description = "获取AI对当前训练会话的指导意见")
-    public Result<AiGuidanceVO> getAiGuidance(@PathVariable String sessionId) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
-    }
-
-    /**
      * 结束训练会话
      * @param sessionId 会话ID
      * @param endTrainingSessionDTO 结束训练会话DTO
@@ -432,38 +407,42 @@ public class AiSimulationController {
      */
     @PostMapping("/end/{sessionId}")
     @Operation(summary = "结束训练会话", description = "结束训练会话并获取总结评估")
-    public Result<TrainingEvaluationVO> endTrainingSession(@PathVariable String sessionId, 
-                                                          @RequestBody EndTrainingSessionDTO endTrainingSessionDTO) {
+    public Result<TrainingEvaluationVO> endTrainingSession(@PathVariable String sessionId,
+                                                           @RequestBody EndTrainingSessionDTO endTrainingSessionDTO) {
         try {
             logger.info("开始结束训练会话并获取评估，会话ID: {}", sessionId);
-            
+
             // 转换sessionId为Long类型
             Long sessionIdLong = Long.parseLong(sessionId);
-            
+
             // 查询训练会话
             TrainingSession trainingSession = trainingSessionService.getById(sessionIdLong);
             if (trainingSession == null) {
                 logger.error("未找到训练会话，会话ID: {}", sessionId);
                 return Result.error("未找到训练会话");
             }
-            
+
             // 更新会话状态和结束时间
             trainingSession.setSessionStatus("COMPLETED");
             trainingSession.setEndTime(LocalDateTime.now());
-            
+
+
+
+            log.info("更新会话表：{}", trainingSession);
+
             // 保存更新
             boolean updateResult = trainingSessionService.updateById(trainingSession);
             if (!updateResult) {
                 logger.error("训练会话状态更新失败，会话ID: {}", sessionId);
                 return Result.error("结束训练会话失败");
             }
-            
+
             // 查询该会话的所有聊天记录
             List<TrainingChatRecord> chatRecords = trainingChatRecordService.lambdaQuery()
                     .eq(TrainingChatRecord::getSessionId, sessionIdLong)
                     .orderByAsc(TrainingChatRecord::getRoundNum)
                     .list();
-            
+
             // 创建历史对话列表
             List<ChatMessage> historyMessages = new ArrayList<>();
             for (TrainingChatRecord record : chatRecords) {
@@ -473,52 +452,34 @@ public class AiSimulationController {
                         .build();
                 historyMessages.add(message);
             }
-            
+
+
             // 发起5轮AI请求获取评分和评价
             // 1. 共情能力评分
             BigDecimal empathyScore = getScoreFromAi("请为这段对话中的社工的共情能力进行评分，满分100分，只需要返回数字。", historyMessages);
-            
+
             // 2. 沟通技巧评分
             BigDecimal communicationScore = getScoreFromAi("请为这段对话中的社工的沟通技巧进行评分，满分100分，只需要返回数字。", historyMessages);
-            
+
             // 3. 问题解决能力评分
             BigDecimal problemSolvingScore = getScoreFromAi("请为这段对话中的社工的问题解决能力进行评分，满分100分，只需要返回数字。", historyMessages);
-            
+
             // 4. 情感识别能力评分
             BigDecimal emotionalRecognitionScore = getScoreFromAi("请为这段对话中的社工的情感识别能力进行评分，满分100分，只需要返回数字。", historyMessages);
-            
+
             // 5. 综合评价
-            ChatContent comprehensiveCommentContent = getComprehensiveCommentFromAi(
-                    "请为这段对话中的社工表现给出综合评价，概述有点和不足和改进方向。", historyMessages);
-            
+            ChatContent comprehensiveCommentContent = getComprehensiveCommentFromAi("请为这段对话中的社工表现给出综合评价，概述有点和不足和改进方向,要求简短回复。", historyMessages);
+
             // 创建并保存训练评估记录
             TrainingEvaluation evaluation = new TrainingEvaluation();
-            evaluation.setSessionId(sessionIdLong);
-            evaluation.setEmpathyScore(empathyScore);
-            evaluation.setCommunicationScore(communicationScore);
-            evaluation.setProblemSolvingScore(problemSolvingScore);
-            evaluation.setEmotionalRecognitionScore(emotionalRecognitionScore);
-            
-            // 解析综合评价内容，提取优点和改进点
-            try {
-                if (comprehensiveCommentContent != null && comprehensiveCommentContent.getContent() != null) {
-                    parseComprehensiveComment(comprehensiveCommentContent.getContent(), evaluation);
-                    evaluation.setAiComprehensiveComment(comprehensiveCommentContent.getContent());
-                } else {
-                    // 如果综合评价为空，设置默认值
-                    evaluation.setStrengths("表现良好");
-                    evaluation.setAreasForImprovement("可以进一步提升沟通技巧");
-                    evaluation.setAiComprehensiveComment("当前AI服务不可用，无法生成详细评价");
-                    logger.warn("AI综合评价内容为空，使用默认值");
-                }
-            } catch (Exception e) {
-                logger.error("解析综合评价内容失败: {}", e.getMessage());
-                // 设置默认值
-                evaluation.setStrengths("表现良好");
-                evaluation.setAreasForImprovement("可以进一步提升沟通技巧");
-                evaluation.setAiComprehensiveComment("解析评价内容时出现异常");
-            }
-            
+            evaluation.setSessionId(sessionIdLong);// 会话ID
+            evaluation.setEmpathyScore(empathyScore);// 共情能力评分
+            evaluation.setCommunicationScore(communicationScore);// 沟通技巧评分
+            evaluation.setProblemSolvingScore(problemSolvingScore);// 问题解决能力评分
+            evaluation.setEmotionalRecognitionScore(emotionalRecognitionScore);// 情感识别能力评分
+
+            evaluation.setStrengths(comprehensiveCommentContent.getContent());// 综合评价
+
             // 保存评估结果
             boolean saveResult = false;
             try {
@@ -526,16 +487,16 @@ public class AiSimulationController {
             } catch (Exception e) {
                 logger.error("训练评估结果保存异常: {}", e.getMessage());
             }
-            
+
             if (!saveResult) {
                 logger.error("训练评估结果保存失败，会话ID: {}", sessionId);
                 return Result.error("训练评估失败");
             }
-            
+
             // 转换为VO返回
             TrainingEvaluationVO evaluationVO = new TrainingEvaluationVO();
             BeanUtils.copyProperties(evaluation, evaluationVO);
-            
+
             logger.info("训练会话结束并评估成功，会话ID: {}", sessionId);
             return Result.success(evaluationVO);
         } catch (NumberFormatException e) {
@@ -544,7 +505,7 @@ public class AiSimulationController {
         } catch (Exception e) {
             String errorMessage = e.getMessage();
             if (errorMessage == null) {
-                errorMessage = "未知异常"; 
+                errorMessage = "未知异常";
                 if (e.getCause() != null) {
                     errorMessage += ", 原因: " + e.getCause().getMessage();
                 }
@@ -553,7 +514,7 @@ public class AiSimulationController {
             return Result.error("结束训练会话异常");
         }
     }
-    
+
     /**
      * 从AI获取评分
      */
@@ -565,8 +526,10 @@ public class AiSimulationController {
                     .prompt(prompt)
                     .history(history)
                     .build();
-            
+
             ChatContent content = arkUtil.botChat(request, systemPrompt);
+            logger.info("AI评分: {}", content.getContent());
+
             if (content == null || content.getContent() == null) {
                 logger.warn("AI评分内容为空，使用默认分数");
                 return BigDecimal.ZERO;
@@ -584,7 +547,7 @@ public class AiSimulationController {
             return BigDecimal.ZERO;
         }
     }
-    
+
     /**
      * 从AI获取综合评价
      */
@@ -596,8 +559,12 @@ public class AiSimulationController {
                     .prompt(prompt)
                     .history(history)
                     .build();
-            
-            return arkUtil.botChat(request, systemPrompt);
+            arkUtil.botChat(request, systemPrompt);
+
+            ChatContent chatContent = arkUtil.botChat(request, systemPrompt);
+            logger.info("AI综合评价请求: {}", chatContent.getContent());
+
+            return chatContent;
         } catch (Exception e) {
             logger.error("获取AI综合评价失败: {}", e.getMessage());
             // 创建默认的评价内容，避免空指针异常
@@ -605,22 +572,5 @@ public class AiSimulationController {
             defaultContent.setContent("该会话未生成综合评价，可能是由于AI服务不可用或会话内容不足。");
             return defaultContent;
         }
-    }
-    
-    /**
-     * 解析综合评价内容，提取优点和改进点
-     */
-    private void parseComprehensiveComment(String comment, TrainingEvaluation evaluation) {
-        // 简单的解析逻辑，实际应用中可能需要更复杂的处理
-        StringBuilder strengths = new StringBuilder();
-        StringBuilder areasForImprovement = new StringBuilder();
-        
-        // 这里可以根据实际的AI返回格式进行解析
-        // 这里使用简单的方式，实际应用中可能需要更复杂的解析逻辑
-        strengths.append("表现良好");
-        areasForImprovement.append("可以进一步提升沟通技巧");
-        
-        evaluation.setStrengths(strengths.toString());
-        evaluation.setAreasForImprovement(areasForImprovement.toString());
     }
 }
