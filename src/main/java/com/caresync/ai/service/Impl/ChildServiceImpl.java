@@ -17,14 +17,17 @@ import com.caresync.ai.model.VO.ChildVO;
 import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.ChildMapper;
+import com.caresync.ai.model.entity.SocialWorker;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.service.IChildService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.caresync.ai.service.ISocialWorkerService;
 import com.caresync.ai.utils.JwtUtil;
 import com.caresync.ai.utils.PasswordEncoderUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import java.util.HashMap;
@@ -46,6 +49,10 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     @Autowired
     private JwtConfig jwtConfig;
 
+    @Lazy
+    @Autowired
+    private ISocialWorkerService socialWorkerService;
+
     /*####################儿童端####################*/
     /**
      * 儿童登录
@@ -61,6 +68,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Child::getChildNo, childNo);
         Child child = this.getOne(queryWrapper);
+
         log.info("输入密码: {}", verifyCode);
         log.info("数据库密码: {}", child.getVerifyCode());
 
@@ -100,6 +108,16 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
 
         ChildVO childVO = new ChildVO();
         BeanUtils.copyProperties(child, childVO);
+
+        // 关联查询社工信息
+        if (child.getSocialWorkerId() != null) {
+            SocialWorker socialWorker = socialWorkerService.getById(child.getSocialWorkerId());
+            if (socialWorker != null) {
+                childVO.setSocialWorkerName(socialWorker.getName());
+                childVO.setSocialWorkerPhone(socialWorker.getPhone());
+            }
+        }
+
         return childVO;
     }
 

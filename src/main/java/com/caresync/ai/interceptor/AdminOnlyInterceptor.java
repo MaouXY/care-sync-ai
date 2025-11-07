@@ -47,7 +47,7 @@ public class AdminOnlyInterceptor implements HandlerInterceptor {
             // 检查用户角色是否为管理员（根据User类中的定义，1-社工，3-管理员）
             if (role == null || (role != 2 && role != 3)) {
                 log.warn("权限不足，当前用户角色: {}", role);
-                sendErrorResponse(response, 403, "PERMISSION_DENIED");
+                sendErrorResponse(response, 406, "PERMISSION_DENIED");
                 return false;
             }
         }

@@ -24,4 +24,5 @@ public class ChildVO {
     private String guardianName;
     private String guardianPhone;
     private String socialWorkerName;
+    private String socialWorkerPhone;
 }

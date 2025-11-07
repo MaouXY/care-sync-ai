@@ -36,7 +36,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**") // 所有接口
                 //添加跨域请求允许的前端地址
-                .allowedOriginPatterns("http://localhost:90", "http://127.0.0.1:90","https://55a0ec7f.r40.cpolar.top") // 指定允许的前端域名
+                .allowedOriginPatterns("http://localhost:90", "http://127.0.0.1:90","http://localhost:5173","https://55a0ec7f.r40.cpolar.top") // 指定允许的前端域名
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // 允许的请求方法
                 .allowedHeaders("*") // 允许所有请求头
                 .allowCredentials(true) // 允许发送cookie
@@ -54,7 +54,7 @@ public class CorsConfig implements WebMvcConfigurer {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         //添加跨域请求允许的前端地址
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:90", "http://127.0.0.1:90","https://55a0ec7f.r40.cpolar.top"));
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:90", "http://127.0.0.1:90","http://localhost:5173","https://55a0ec7f.r40.cpolar.top"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
