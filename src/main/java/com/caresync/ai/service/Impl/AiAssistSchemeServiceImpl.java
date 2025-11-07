@@ -3,6 +3,7 @@ package com.caresync.ai.service.Impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.caresync.ai.model.DTO.ChildQueryDTO;
+import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.ChildInfoVO;
@@ -10,9 +11,11 @@ import com.caresync.ai.model.VO.ChildQueueVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
 import com.caresync.ai.model.VO.SocialWorkerInfoVO;
 import com.caresync.ai.model.entity.AiAssistScheme;
+import com.caresync.ai.model.entity.AiAnalysisLog;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.AiAssistSchemeMapper;
 import com.caresync.ai.result.PageResult;
+import com.caresync.ai.service.IAiAnalysisLogService;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import com.caresync.ai.service.IChildService;
 import com.caresync.ai.service.ISocialWorkerService;
@@ -27,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
+import java.util.Collections;
 
 /**
  * <p>
@@ -49,6 +53,9 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
     @Lazy
     @Autowired
     private ISocialWorkerService socialWorkerService;
+
+    @Autowired
+    private IAiAnalysisLogService aiAnalysisLogService;
 
     @Override
     public PageResult<AssistSchemeVO> getSchemeList(SchemeQueryDTO schemeQueryDTO) {
@@ -262,6 +269,198 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         }
 
         return detailVO;
+    }
+
+    @Override
+    public AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO) {
+        log.info("开始生成AI服务方案，儿童ID: {}", generateSchemeDTO.getChildId());
+        
+        // 1. 获取儿童信息
+        Child child = childService.getById(generateSchemeDTO.getChildId());
+        if (child == null) {
+            log.error("未找到ID为{}的儿童信息", generateSchemeDTO.getChildId());
+            throw new RuntimeException("儿童信息不存在");
+        }
+        
+        // 2. 获取最新的AI分析记录
+        AiAnalysisLog latestAnalysis = getLatestAiAnalysisLog(child.getId());
+        if (latestAnalysis == null) {
+            log.error("儿童ID: {} 没有AI分析记录", child.getId());
+            throw new RuntimeException("该儿童暂无AI分析记录，请先进行AI分析");
+        }
+        
+        // 3. 解析AI分析结果
+        String analysisResult = parseAnalysisResult(latestAnalysis.getAnalysisResult());
+        
+        // 4. 生成AI建议（这里需要调用AI服务，暂时使用模拟数据）
+        String aiSuggestions = generateAiSuggestions(analysisResult, generateSchemeDTO.getAdditionalInfo());
+        
+        // 5. 创建服务方案
+        AiAssistScheme scheme = new AiAssistScheme();
+        scheme.setChildId(child.getId());
+        scheme.setWorkerId(1L); // 默认社工ID，实际应该从登录信息获取
+        scheme.setTarget(generateSchemeDTO.getAdditionalInfo() != null ? 
+                        generateSchemeDTO.getAdditionalInfo() : "缓解孤独感，提升社交能力");
+        scheme.setMeasures(new String[]{"建立信任关系", "情绪识别与表达", "社交技能培养", "总结与展望"});
+        scheme.setCycle(7); // 默认1周
+        scheme.setSchemeStatus("DRAFT");
+        scheme.setAiSuggestions(aiSuggestions);
+        scheme.setAiAnalysisId(latestAnalysis.getId());
+        
+        // 6. 保存服务方案
+        boolean saveSuccess = this.save(scheme);
+        if (!saveSuccess) {
+            log.error("保存服务方案失败，儿童ID: {}", child.getId());
+            throw new RuntimeException("生成服务方案失败");
+        }
+        
+        log.info("成功生成服务方案，方案ID: {}", scheme.getId());
+        
+        // 7. 转换为VO并返回
+        AssistSchemeVO vo = new AssistSchemeVO();
+        vo.setId(scheme.getId());
+        vo.setChildId(scheme.getChildId());
+        vo.setWorkerId(scheme.getWorkerId());
+        vo.setTarget(scheme.getTarget());
+        // 修复类型转换问题，处理String数组转为List<String>
+        if (scheme.getMeasures() instanceof String[]) {
+            vo.setMeasures(Arrays.asList((String[]) scheme.getMeasures()));
+        } else if (scheme.getMeasures() instanceof List) {
+            vo.setMeasures((List<String>) scheme.getMeasures());
+        } else {
+            vo.setMeasures(Collections.emptyList());
+        }
+        vo.setCycle(scheme.getCycle());
+        vo.setSchemeStatus(scheme.getSchemeStatus());
+        vo.setAiSuggestions(scheme.getAiSuggestions());
+        vo.setAiAnalysisId(scheme.getAiAnalysisId());
+        vo.setCreateTime(scheme.getCreateTime());
+        
+        // 补充儿童和社工姓名
+        ChildInfoVO childInfo = childService.getChildInfo(child.getId());
+        if (childInfo != null) {
+            vo.setChildName(childInfo.getName());
+        }
+        
+        SocialWorkerInfoVO workerInfo = socialWorkerService.getSocialWorkerInfo(scheme.getWorkerId());
+        if (workerInfo != null) {
+            vo.setWorkerName(workerInfo.getName());
+        }
+        
+        return vo;
+    }
+    
+    /**
+     * 获取最新的AI分析记录
+     */
+    private AiAnalysisLog getLatestAiAnalysisLog(Long childId) {
+        // 使用LambdaQueryWrapper查询最新的AI分析记录
+        LambdaQueryWrapper<AiAnalysisLog> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(AiAnalysisLog::getChildId, childId)
+                   .orderByDesc(AiAnalysisLog::getCreateTime)
+                   .last("LIMIT 1");
+        
+        return aiAnalysisLogService.getOne(queryWrapper);
+    }
+    
+    /**
+     * 解析AI分析结果
+     */
+    private String parseAnalysisResult(Object analysisResult) {
+        try {
+            if (analysisResult == null) {
+                return "暂无分析结果";
+            }
+            
+            if (analysisResult instanceof String) {
+                return (String) analysisResult;
+            } else {
+                // 如果是JSON对象，转换为字符串
+                return objectMapper.writeValueAsString(analysisResult);
+            }
+        } catch (Exception e) {
+            log.error("解析AI分析结果失败", e);
+            return "解析分析结果失败";
+        }
+    }
+    
+    /**
+     * 生成AI建议（模拟实现，实际应该调用AI服务）
+     */
+    private String generateAiSuggestions(String analysisResult, String additionalInfo) {
+        try {
+            // 模拟AI建议生成
+            Map<String, Object> aiSuggestions = new HashMap<>();
+            
+            // 目标建议
+            List<String> targetSuggest = Arrays.asList(
+                "降低孤独焦虑，建立积极心态",
+                "增强情绪管理，正确表达感受", 
+                "提升社交能力，改善人际沟通"
+            );
+            aiSuggestions.put("target_suggest", targetSuggest);
+            
+            // 服务措施建议
+            List<Map<String, Object>> measuresSuggest = new ArrayList<>();
+            
+            // 第1周：建立信任关系
+            Map<String, Object> week1 = new HashMap<>();
+            week1.put("week", "建立信任关系");
+            week1.put("details", Arrays.asList(
+                createTaskDetail("初次见面，了解小明的兴趣爱好和日常生活情况。", "pending"),
+                createTaskDetail("一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "pending"),
+                createTaskDetail("与小明约定每周固定的见面时间，增加安全感。", "pending")
+            ));
+            measuresSuggest.add(week1);
+            
+            // 第2周：情绪识别与表达
+            Map<String, Object> week2 = new HashMap<>();
+            week2.put("week", "情绪识别与表达");
+            week2.put("details", Arrays.asList(
+                createTaskDetail("通过情绪卡片游戏，帮助小明识别不同的情绪。", "pending"),
+                createTaskDetail("引导小明用绘画的方式表达自己的内心感受。", "pending"),
+                createTaskDetail("教授简单的情绪调节方法，如深呼吸、倾诉等。", "pending")
+            ));
+            measuresSuggest.add(week2);
+            
+            // 第3周：社交技能培养
+            Map<String, Object> week3 = new HashMap<>();
+            week3.put("week", "社交技能培养");
+            week3.put("details", Arrays.asList(
+                createTaskDetail("组织小组活动，鼓励小明与其他小朋友互动。", "pending"),
+                createTaskDetail("角色扮演练习，学习如何与他人友好沟通。", "pending"),
+                createTaskDetail("分享正面社交经验，增强小明的自信心。", "pending")
+            ));
+            measuresSuggest.add(week3);
+            
+            // 第4周：总结与展望
+            Map<String, Object> week4 = new HashMap<>();
+            week4.put("week", "总结与展望");
+            week4.put("details", Arrays.asList(
+                createTaskDetail("回顾四周的变化，肯定小明的进步。", "pending"),
+                createTaskDetail("共同制定后续计划，帮助小明保持积极状态。", "pending"),
+                createTaskDetail("与家长沟通，分享小明的成长和需要继续关注的方面。", "pending")
+            ));
+            measuresSuggest.add(week4);
+            
+            aiSuggestions.put("measures_suggest", measuresSuggest);
+            
+            return objectMapper.writeValueAsString(aiSuggestions);
+        } catch (Exception e) {
+            log.error("生成AI建议失败", e);
+            return "{}";
+        }
+    }
+    
+    /**
+     * 创建任务详情
+     */
+    private Map<String, Object> createTaskDetail(String content, String status) {
+        Map<String, Object> taskDetail = new HashMap<>();
+        taskDetail.put("content", content);
+        taskDetail.put("status", status);
+        // assist_track_log_id在保存时添加
+        return taskDetail;
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.caresync.ai.service;
 
+import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
@@ -37,4 +38,11 @@ public interface IAiAssistSchemeService extends IService<AiAssistScheme> {
      * @return 服务方案详情VO
      */
     DetailSchemeVO getSchemeDetail(Long id);
+
+    /**
+     * 生成AI服务方案
+     * @param generateSchemeDTO 生成方案DTO
+     * @return 服务方案VO
+     */
+    AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO);
 }

@@ -11,12 +11,14 @@ import com.caresync.ai.result.Result;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * 服务方案模块控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/social-worker/scheme")
 @Tag(name = "服务方案模块接口", description = "AI服务方案相关接口")
@@ -33,8 +35,15 @@ public class AiAssistSchemeController {
     @PostMapping("/generate")
     @Operation(summary = "生成AI服务方案", description = "一键生成AI服务方案")
     public Result<AssistSchemeVO> generateScheme(@RequestBody GenerateSchemeDTO generateSchemeDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
+        try {
+            AssistSchemeVO result = aiAssistSchemeService.generateScheme(generateSchemeDTO);
+            return Result.success(result);
+        } catch (RuntimeException e) {
+            return Result.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("生成服务方案失败", e);
+            return Result.error("生成服务方案失败，请稍后重试");
+        }
     }
 
     /**
