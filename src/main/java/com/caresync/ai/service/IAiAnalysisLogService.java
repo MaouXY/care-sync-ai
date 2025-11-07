@@ -30,4 +30,11 @@ public interface IAiAnalysisLogService extends IService<AiAnalysisLog> {
      */
     AiAnalysisResultVO getAiAnalysisDetail(Long id);
 
+    /**
+     * 根据儿童id生成AI分析结果
+     * @param id 儿童ID
+     * @return AI分析结果VO
+     */
+    AiAnalysisResultVO generateAiAnalysis(Long id);
+
 }

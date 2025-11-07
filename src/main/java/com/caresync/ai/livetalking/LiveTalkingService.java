@@ -1,8 +1,12 @@
 package com.caresync.ai.livetalking;
 
+import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.model.DTO.ChatMessageDTO;
 import com.caresync.ai.model.VO.ChildChatMessageVO;
 import com.caresync.ai.model.ai.ChatContent;
+import com.caresync.ai.model.ai.ChatRequest;
+import com.caresync.ai.model.entity.AiChatRecord;
+import com.caresync.ai.service.IAiChatRecordService;
 import com.caresync.ai.utils.ArkUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +18,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 接收儿童端发送的消息，转发给直播互动类
@@ -22,12 +27,14 @@ import java.time.LocalDateTime;
 @Service
 public class LiveTalkingService {
 
-    @Autowired
-    private ArkUtil arkUtil;
+     @Autowired
+     private ArkUtil arkUtil;
 
-    // http://localhost:8010/
-    @Value("${liveTalking.url}")
-    private String liveTalkingUrl;
+     @Autowired
+     private IAiChatRecordService aiChatRecordService;
+
+     @Value("${liveTalking.url}")
+     private String liveTalkingUrl;
 
     /**
      * 发送聊天消息
@@ -38,11 +45,34 @@ public class LiveTalkingService {
         log.info("获取到的历史消息: {}", chatMessageDTO.getChatRequest().getHistory());
         log.info("获取到的用户消息: {}", chatMessageDTO.getChatRequest().getPrompt());
 
+        // 获取当前登录儿童的ID
+        Long childId = BaseContext.getCurrentId();
+        if (childId == null) {
+            log.error("未获取到当前登录儿童信息");
+            throw new RuntimeException("未登录，请先登录");
+        }
+        log.info("当前登录儿童ID: {}", childId);
+
+        // 获取会话ID和数字人会话ID
+        String sessionId = chatMessageDTO.getSessionId();
+        String digiSessionId = chatMessageDTO.getDigiSessionId() != null ? chatMessageDTO.getDigiSessionId().toString() : null;
+        
+        // 查询当前会话的最大轮次
+        Integer maxRound = getMaxRoundBySessionId(sessionId);
+        int roundNum = maxRound == null ? 1 : maxRound + 1;
+        log.info("当前会话轮次: {}", roundNum);
+
+        // 保存儿童发送的消息到ai_chat_record表
+        saveChildMessage(childId, sessionId, digiSessionId, roundNum, chatMessageDTO);
+
         // 儿童端-系统提示词
         String systemPrompt = "你是一个陪伴儿童的智能ai，你需要用中文回答儿童的问题。";
         //调用LLM生成回复
         ChatContent chatContent = arkUtil.botChat(chatMessageDTO.getChatRequest(), systemPrompt);
         log.info("LLM回复: {}", chatContent.getContent());
+
+        // 保存AI回复的消息到ai_chat_record表
+        saveAiReplyMessage(childId, sessionId, digiSessionId, roundNum, chatContent.getContent());
 
         log.info("数字人会话ID: {}", chatMessageDTO.getDigiSessionId());
 
@@ -171,6 +201,95 @@ public class LiveTalkingService {
         } catch (Exception e) {
             log.error("LiveTalking服务连接测试失败: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * 查询当前会话的最大轮次
+     */
+    private Integer getMaxRoundBySessionId(String sessionId) {
+        try {
+            // 查询当前会话的最大轮次
+            List<AiChatRecord> records = aiChatRecordService.lambdaQuery()
+                    .eq(AiChatRecord::getSessionId, sessionId)
+                    .orderByDesc(AiChatRecord::getRoundNum)
+                    .last("LIMIT 1")
+                    .list();
+            
+            if (records != null && !records.isEmpty()) {
+                return records.get(0).getRoundNum();
+            }
+            return null;
+        } catch (Exception e) {
+            log.error("查询会话最大轮次失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 保存儿童发送的消息
+     */
+    private void saveChildMessage(Long childId, String sessionId, String digiSessionId, int roundNum, ChatMessageDTO chatMessageDTO) {
+        try {
+            // 确保contentType符合数据库约束要求（必须是大写的"TEXT"或"VOICE"）
+            String contentType = chatMessageDTO.getContentType();
+            if (contentType != null) {
+                contentType = contentType.toUpperCase();
+                if (!"TEXT".equals(contentType) && !"VOICE".equals(contentType)) {
+                    contentType = "TEXT"; // 默认值
+                }
+            } else {
+                contentType = "TEXT"; // 默认值
+            }
+            
+            AiChatRecord childRecord = AiChatRecord.builder()
+                    .childId(childId)
+                    .sessionId(sessionId)
+                    .digiSessionId(digiSessionId != null ? digiSessionId : "")
+                    .roundNum(roundNum)
+                    .contentType(contentType)
+                    .content(chatMessageDTO.getChatRequest().getPrompt())
+                    .aiReply(false) // 儿童消息
+                    .filtered(false) // 默认未过滤
+                    .emotionTag(null) // 情感标签（可后续分析）
+                    .build();
+            
+            boolean saved = aiChatRecordService.save(childRecord);
+            if (saved) {
+                log.info("保存儿童消息成功，记录ID: {}", childRecord.getId());
+            } else {
+                log.error("保存儿童消息失败");
+            }
+        } catch (Exception e) {
+            log.error("保存儿童消息异常: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 保存AI回复的消息
+     */
+    private void saveAiReplyMessage(Long childId, String sessionId, String digiSessionId, int roundNum, String aiContent) {
+        try {
+            AiChatRecord aiRecord = AiChatRecord.builder()
+                    .childId(childId)
+                    .sessionId(sessionId)
+                    .digiSessionId(digiSessionId != null ? digiSessionId : "")
+                    .roundNum(roundNum)
+                    .contentType("TEXT") // AI回复都是文本
+                    .content(aiContent)
+                    .aiReply(true) // AI回复
+                    .filtered(false) // 默认未过滤
+                    .emotionTag(null) // 情感标签（可后续分析）
+                    .build();
+            
+            boolean saved = aiChatRecordService.save(aiRecord);
+            if (saved) {
+                log.info("保存AI回复消息成功，记录ID: {}", aiRecord.getId());
+            } else {
+                log.error("保存AI回复消息失败");
+            }
+        } catch (Exception e) {
+            log.error("保存AI回复消息异常: {}", e.getMessage());
         }
     }
 }

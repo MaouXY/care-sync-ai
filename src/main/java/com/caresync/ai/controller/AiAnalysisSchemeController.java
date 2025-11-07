@@ -51,4 +51,21 @@ public class AiAnalysisSchemeController {
         }
         return Result.success(result);
     }
+
+    /**
+     * 根据儿童id生成AI分析结果
+     * @param id 儿童ID
+     * @return AI分析结果VO
+     */
+    @PostMapping("/{id}")
+    @Operation(summary = "根据儿童id生成AI分析结果", description = "根据儿童ID生成AI分析结果，包含潜在问题、情感趋势、核心需求、分析摘要、情绪趋势分析、情感指标分析、关键发现、建议与干预策略、AI结构化数据")
+    public Result<AiAnalysisResultVO> generateAiAnalysis(@PathVariable Long id) {
+        // 调用service层方法根据儿童id生成AI分析结果
+        AiAnalysisResultVO result = aiAnalysisLogService.generateAiAnalysis(id);
+        if (result == null) {
+            return Result.error("生成AI分析结果失败");
+        }
+        return Result.success(result);
+    }
+
 }
