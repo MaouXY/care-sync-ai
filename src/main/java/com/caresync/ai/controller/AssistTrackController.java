@@ -6,17 +6,20 @@ import com.caresync.ai.model.VO.TrackLogVO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
 import com.caresync.ai.model.entity.AiAssistScheme;
+import com.caresync.ai.model.entity.AssistTrackLog;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.result.Result;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import com.caresync.ai.service.IChildService;
+import com.caresync.ai.service.IAssistTrackLogService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -38,6 +41,9 @@ public class AssistTrackController {
     
     @Autowired
     private IChildService childService;
+    
+    @Autowired
+    private IAssistTrackLogService assistTrackLogService;
     
     @Autowired
     private ObjectMapper objectMapper;
@@ -78,9 +84,196 @@ public class AssistTrackController {
      */
     @PutMapping("/log/{id}")
     @Operation(summary = "更新服务跟踪日志", description = "更新服务跟踪日志内容")
+    @Transactional
     public Result updateTrackLog(@PathVariable Long id, @RequestBody UpdateTrackLogDTO updateTrackLogDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
+        try {
+            log.info("开始更新服务跟踪日志，日志ID: {}, 更新数据: {}", id, updateTrackLogDTO);
+            
+            // 1. 验证参数
+            if (id == null || updateTrackLogDTO == null) {
+                log.warn("更新服务跟踪日志参数为空，日志ID: {}, DTO: {}", id, updateTrackLogDTO);
+                return Result.error("参数不能为空");
+            }
+            
+            // 2. 查询日志记录
+            AssistTrackLog trackLog = assistTrackLogService.getById(id);
+            if (trackLog == null) {
+                log.warn("未找到服务跟踪日志记录，日志ID: {}", id);
+                return Result.error("未找到指定的服务跟踪日志");
+            }
+            
+            // 3. 查询关联的服务方案
+            AiAssistScheme scheme = aiAssistSchemeService.getById(trackLog.getSchemeId());
+            if (scheme == null) {
+                log.warn("未找到关联的服务方案，方案ID: {}", trackLog.getSchemeId());
+                return Result.error("未找到关联的服务方案");
+            }
+            
+            // 4. 更新日志记录
+            boolean logUpdated = updateTrackLogRecord(trackLog, updateTrackLogDTO);
+            if (!logUpdated) {
+                log.error("更新服务跟踪日志记录失败，日志ID: {}", id);
+                return Result.error("更新服务跟踪日志失败");
+            }
+            
+            // 5. 同步更新服务方案中的子任务状态
+            boolean schemeUpdated = updateSchemeTaskStatus(scheme, trackLog, updateTrackLogDTO);
+            if (!schemeUpdated) {
+                log.error("更新服务方案子任务状态失败，方案ID: {}, 日志ID: {}", scheme.getId(), id);
+                return Result.error("更新服务方案子任务状态失败");
+            }
+            
+            log.info("服务跟踪日志更新成功，日志ID: {}, 方案ID: {}", id, scheme.getId());
+            return Result.success();
+            
+        } catch (Exception e) {
+            log.error("更新服务跟踪日志异常，日志ID: {}", id, e);
+            return Result.error("更新服务跟踪日志异常: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 更新服务跟踪日志记录
+     */
+    private boolean updateTrackLogRecord(AssistTrackLog trackLog, UpdateTrackLogDTO updateTrackLogDTO) {
+        try {
+            // 更新完成状态
+            if (updateTrackLogDTO.getCompletionStatus() != null) {
+                trackLog.setCompletionStatus(updateTrackLogDTO.getCompletionStatus());
+            }
+            
+            // 更新记录内容
+            if (updateTrackLogDTO.getRecordContent() != null) {
+                trackLog.setRecordContent(updateTrackLogDTO.getRecordContent());
+            }
+            
+            // 设置更新时间
+            trackLog.setUpdateTime(LocalDateTime.now());
+            
+            // 保存更新
+            boolean result = assistTrackLogService.updateById(trackLog);
+            log.debug("更新服务跟踪日志记录结果: {}, 日志ID: {}", result, trackLog.getId());
+            return result;
+            
+        } catch (Exception e) {
+            log.error("更新服务跟踪日志记录异常，日志ID: {}", trackLog.getId(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 更新服务方案中的子任务状态
+     */
+    private boolean updateSchemeTaskStatus(AiAssistScheme scheme, AssistTrackLog trackLog, UpdateTrackLogDTO updateTrackLogDTO) {
+        try {
+            // 获取ai_suggestions
+            Object aiSuggestionsObj = scheme.getAiSuggestions();
+            if (aiSuggestionsObj == null) {
+                log.warn("服务方案ai_suggestions为空，方案ID: {}", scheme.getId());
+                return false;
+            }
+            
+            String aiSuggestions;
+            if (aiSuggestionsObj instanceof String) {
+                aiSuggestions = (String) aiSuggestionsObj;
+            } else {
+                // 如果不是String类型，转换为JSON字符串
+                aiSuggestions = objectMapper.writeValueAsString(aiSuggestionsObj);
+            }
+            
+            // 解析JSON
+            Map<String, Object> aiSuggestionsMap = objectMapper.readValue(aiSuggestions, new TypeReference<Map<String, Object>>() {});
+            
+            // 获取measures_suggest
+            Object measuresSuggest = aiSuggestionsMap.get("measures_suggest");
+            if (!(measuresSuggest instanceof List)) {
+                log.warn("服务方案measures_suggest格式不正确，方案ID: {}", scheme.getId());
+                return false;
+            }
+            
+            List<Map<String, Object>> measuresList = (List<Map<String, Object>>) measuresSuggest;
+            boolean taskUpdated = false;
+            
+            // 遍历measures_suggest，找到对应的子任务
+            for (Map<String, Object> measure : measuresList) {
+                Object detailsObj = measure.get("details");
+                if (!(detailsObj instanceof List)) {
+                    continue;
+                }
+                
+                List<Map<String, Object>> detailsList = (List<Map<String, Object>>) detailsObj;
+                
+                // 遍历details，找到对应的子任务
+                for (Map<String, Object> detail : detailsList) {
+                    Object trackLogIdObj = detail.get("assist_track_log_id");
+                    if (trackLogIdObj != null) {
+                        Long trackLogId = null;
+                        if (trackLogIdObj instanceof Long) {
+                            trackLogId = (Long) trackLogIdObj;
+                        } else if (trackLogIdObj instanceof Integer) {
+                            trackLogId = ((Integer) trackLogIdObj).longValue();
+                        }
+                        
+                        // 找到对应的子任务
+                        if (trackLogId != null && trackLogId.equals(trackLog.getId())) {
+                            // 更新子任务状态
+                            if (updateTrackLogDTO.getCompletionStatus() != null) {
+                                // 转换状态值：COMPLETED -> completed, UNFINISHED -> pending
+                                String status = convertCompletionStatus(updateTrackLogDTO.getCompletionStatus());
+                                detail.put("status", status);
+                                log.debug("更新子任务状态，日志ID: {}, 状态: {}", trackLogId, status);
+                            }
+                            
+                            // 更新记录内容
+                            if (updateTrackLogDTO.getRecordContent() != null) {
+                                detail.put("content", updateTrackLogDTO.getRecordContent());
+                                log.debug("更新子任务内容，日志ID: {}, 内容: {}", trackLogId, updateTrackLogDTO.getRecordContent());
+                            }
+                            
+                            taskUpdated = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (taskUpdated) {
+                    break;
+                }
+            }
+            
+            if (taskUpdated) {
+                // 更新ai_suggestions
+                String updatedAiSuggestions = objectMapper.writeValueAsString(aiSuggestionsMap);
+                scheme.setAiSuggestions(updatedAiSuggestions);
+                
+                // 保存更新
+                boolean result = aiAssistSchemeService.updateById(scheme);
+                log.debug("更新服务方案子任务状态结果: {}, 方案ID: {}", result, scheme.getId());
+                return result;
+            } else {
+                log.warn("未找到对应的子任务，日志ID: {}, 方案ID: {}", trackLog.getId(), scheme.getId());
+                return false;
+            }
+            
+        } catch (Exception e) {
+            log.error("更新服务方案子任务状态异常，方案ID: {}, 日志ID: {}", scheme.getId(), trackLog.getId(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 转换完成状态值
+     */
+    private String convertCompletionStatus(String completionStatus) {
+        if ("COMPLETED".equals(completionStatus)) {
+            return "completed";
+        } else if ("IN_PROGRESS".equals(completionStatus)) {
+            return "in_progress";
+        } else if ("PENDING".equals(completionStatus)) {
+            return "pending";
+        } else {
+            return completionStatus.toLowerCase();
+        }
     }
     
     /**

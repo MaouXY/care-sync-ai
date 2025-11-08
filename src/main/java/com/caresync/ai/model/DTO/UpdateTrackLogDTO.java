@@ -8,6 +8,6 @@ import lombok.Data;
 @Data
 public class UpdateTrackLogDTO {
     private Long id; // 日志ID
-    private String completionStatus; // 完成状态：COMPLETED（已完成）/UNFINISHED（未完成）
+    private String completionStatus; // 完成状态：COMPLETED（已完成）/IN_PROGRESS（进行中）/PENDING（待处理）
     private String recordContent; // 记录内容
 }
