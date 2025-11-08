@@ -8,5 +8,6 @@ import lombok.Data;
 @Data
 public class GenerateSchemeDTO {
     private Long childId; // 儿童ID
-    private String additionalInfo; // 额外信息（可选）
+    private String additionalInfo; // 目标
+    private String[] measures; // 措施
 }

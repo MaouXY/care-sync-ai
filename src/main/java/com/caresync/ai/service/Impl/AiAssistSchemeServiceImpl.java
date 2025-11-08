@@ -2,6 +2,7 @@ package com.caresync.ai.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
@@ -10,6 +11,8 @@ import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
 import com.caresync.ai.model.VO.SocialWorkerInfoVO;
+import com.caresync.ai.model.ai.ChatContent;
+import com.caresync.ai.model.ai.ChatRequest;
 import com.caresync.ai.model.entity.AiAssistScheme;
 import com.caresync.ai.model.entity.AiAnalysisLog;
 import com.caresync.ai.model.entity.Child;
@@ -20,6 +23,7 @@ import com.caresync.ai.service.IAiAssistSchemeService;
 import com.caresync.ai.service.IChildService;
 import com.caresync.ai.service.ISocialWorkerService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.caresync.ai.utils.ArkUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +60,9 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
 
     @Autowired
     private IAiAnalysisLogService aiAnalysisLogService;
+
+    @Autowired
+    private ArkUtil arkUtil;
 
     /**
      * 获取辅助方案列表
@@ -290,6 +297,101 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
     @Override
     public AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO) {
         log.info("开始生成AI服务方案，儿童ID: {}", generateSchemeDTO.getChildId());
+
+        String systemPrompt = """
+        你是一个专业的社会工作者，专门为留守儿童提供情感陪伴和服务方案设计。
+        
+        请根据儿童的AI分析结果，生成一个详细的服务方案。方案需要严格遵循以下JSON格式，只需输出JSON内容：
+        
+        {
+          "target_suggest": ["目标1", "目标2", "目标3"],
+          "measures_suggest": [
+            {
+              "week": "第一周阶段标题",
+              "details": [
+                {"content": "具体任务内容1", "status": "pending"},
+                {"content": "具体任务内容2", "status": "pending"},
+                {"content": "具体任务内容3", "status": "pending"}
+              ]
+            },
+            {
+              "week": "第二周阶段标题",
+              "details": [
+                {"content": "具体任务内容1", "status": "pending"},
+                {"content": "具体任务内容2", "status": "pending"},
+                {"content": "具体任务内容3", "status": "pending"}
+              ]
+            }
+          ]
+        }
+        
+        方案生成要求：
+        1. 目标建议(target_suggest)：基于儿童的情感分析结果，提出3-5个具体、可衡量的服务目标
+        2. 服务措施(measures_suggest)：设计4-6周的服务计划，每周包含3-5个具体可执行的任务
+        3. 每周标题(week)：基于儿童的具体情感需求，为每周设计专业、有意义的阶段标题
+        4. 任务内容(content)：每个任务要具体、可操作，符合儿童年龄特点，包含具体活动和方法
+        5. 状态(status)：所有任务状态统一设置为"pending"，不需要生成assist_track_log_id
+        
+        每周标题设计要求：
+        - 标题要体现专业性和针对性，反映该周的核心服务重点
+        - 标题要简洁明了，便于社工理解和执行
+        - 标题要体现服务进程的递进性，如：信任建立→情绪识别→社交技能→巩固提升
+        - 标题要基于儿童的具体情感分析结果进行个性化设计
+        
+        内容要求：
+        - 目标要聚焦儿童的核心情感需求，如安全感建立、情绪管理、社交能力提升等
+        - 措施要循序渐进，从建立信任关系到技能培养再到巩固提升
+        - 任务要具体可行，包含具体的活动、游戏、沟通方式等
+        - 要体现专业性和针对性，基于儿童的具体情感分析结果
+        
+        请确保方案内容专业、具体、可操作，能够为社工提供清晰的执行指导。
+        """;
+        //以下是方案结构
+      /*  -- 子任务完成状态直接通过ai_suggestions JSON字段中的details数组实现
+                -- details数组中的每个子任务对象包含content(任务内容)和status(完成状态)字段
+                -- status字段支持三种状态：pending(待处理)/in_progress(进行中)/completed(已完成)
+                -- ai_suggestions结构示例（适配服务计划页面）
+        -- {
+                --   "target_suggest": [ -- 方案目标
+                --     "降低孤独焦虑，建立积极心态",
+                --     "增强情绪管理，正确表达感受",
+                --     "提升社交能力，改善人际沟通"
+                        --   ], -- 方案目标
+                --   "measures_suggest": [ -- 服务措施
+                --     {
+            --       "week": "建立信任关系",
+                    --       "details": [
+            --         {"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "completed","assist_track_log_id":1}, --status和assist_track_log_id为使用代码添加,不需要ai生成
+            --         {"content": "一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "status": "completed","assist_track_log_id":2},
+            --         {"content": "与小明约定每周固定的见面时间，增加安全感。", "status": "in_progress","assist_track_log_id":3}
+            --       ]
+            --     },
+        --     {
+                --       "week": "情绪识别与表达",
+                --       "details": [
+        --         {"content": "通过情绪卡片游戏，帮助小明识别不同的情绪。", "status": "pending","assist_track_log_id":4},
+        --         {"content": "引导小明用绘画的方式表达自己的内心感受。", "status": "pending","assist_track_log_id":5},
+        --         {"content": "教授简单的情绪调节方法，如深呼吸、倾诉等。", "status": "pending","assist_track_log_id":6}
+        --       ]
+        --     },
+        --     {
+                --       "week": "社交技能培养",
+                --       "details": [
+        --         {"content": "组织小组活动，鼓励小明与其他小朋友互动。", "status": "pending","assist_track_log_id":7},
+        --         {"content": "角色扮演练习，学习如何与他人友好沟通。", "status": "pending","assist_track_log_id":8},
+        --         {"content": "分享正面社交经验，增强小明的自信心。", "status": "pending","assist_track_log_id":9}
+        --       ]
+        --     },
+        --     {
+                --       "week": "总结与展望",
+                --       "details": [
+        --         {"content": "回顾四周的变化，肯定小明的进步。", "status": "pending","assist_track_log_id":10},
+        --         {"content": "共同制定后续计划，帮助小明保持积极状态。", "status": "pending","assist_track_log_id":11},
+        --         {"content": "与家长沟通，分享小明的成长和需要继续关注的方面。", "status": "pending","assist_track_log_id":12}
+        --       ]
+        --     }
+        --   ]
+        -- }*/
         
         // 1. 获取儿童信息
         Child child = childService.getById(generateSchemeDTO.getChildId());
@@ -297,33 +399,33 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
             log.error("未找到ID为{}的儿童信息", generateSchemeDTO.getChildId());
             throw new RuntimeException("儿童信息不存在");
         }
-        
-        // 2. 获取最新的AI分析记录
-        AiAnalysisLog latestAnalysis = getLatestAiAnalysisLog(child.getId());
-        if (latestAnalysis == null) {
-            log.error("儿童ID: {} 没有AI分析记录", child.getId());
-            throw new RuntimeException("该儿童暂无AI分析记录，请先进行AI分析");
-        }
-        
+
         // 3. 解析AI分析结果
-        String analysisResult = parseAnalysisResult(latestAnalysis.getAnalysisResult());
-        
-        // 4. 生成AI建议（这里需要调用AI服务，暂时使用模拟数据）
-        String aiSuggestions = generateAiSuggestions(analysisResult, generateSchemeDTO.getAdditionalInfo());
+        String analysisResult = parseAnalysisResult(child.getAiStructInfo());
+
+        ChatRequest request = ChatRequest.builder()
+            .prompt("儿童基本信息：姓名：" + child.getName() + "，年龄：" + child.getAge() + "岁，性别：" + child.getGender() + 
+                    "\nAI情感分析结果：" + analysisResult + 
+                    "\n服务目标要求：" + (generateSchemeDTO.getAdditionalInfo() != null ? generateSchemeDTO.getAdditionalInfo() : "基于儿童情感需求制定个性化服务方案") + 
+                    "\n请基于以上信息，生成符合JSON格式要求的服务方案。" + 
+                    "\n特别注意：请为每周设计专业、有意义的阶段标题，标题要体现该周的核心服务重点，如'信任关系建立'、'情绪识别训练'、'社交技能培养'等。")
+            .build();
+
+        // 4. 生成AI建议
+        ChatContent aiSuggestions = arkUtil.botChat(request,systemPrompt);
         
         // 5. 创建服务方案
         AiAssistScheme scheme = new AiAssistScheme();
         scheme.setChildId(child.getId());
-        scheme.setWorkerId(1L); // 默认社工ID，实际应该从登录信息获取
+        scheme.setWorkerId(BaseContext.getCurrentId()); // 默认社工ID，实际应该从登录信息获取
         scheme.setTarget(generateSchemeDTO.getAdditionalInfo() != null ? 
                         generateSchemeDTO.getAdditionalInfo() : "缓解孤独感，提升社交能力");
-        scheme.setMeasures(new String[]{"建立信任关系", "情绪识别与表达", "社交技能培养", "总结与展望"});
-        scheme.setCycle(7); // 默认1周
+        //scheme.setMeasures(generateSchemeDTO.getMeasures() != null ? generateSchemeDTO.getMeasures() : new String[]{"建立信任关系", "情绪识别与表达", "社交技能培养", "总结与展望"});
+        scheme.setCycle(7); // 根据ai生成的方案确定周期,解析measures_suggest中week的数量,默认7周
         scheme.setSchemeStatus("DRAFT");
-        scheme.setAiSuggestions(aiSuggestions);
-        scheme.setAiAnalysisId(latestAnalysis.getId());
+        scheme.setAiSuggestions(aiSuggestions.getContent());
         
-        // 6. 保存服务方案
+        // 6. 保存服务方案-保存子任务记录
         boolean saveSuccess = this.save(scheme);
         if (!saveSuccess) {
             log.error("保存服务方案失败，儿童ID: {}", child.getId());
