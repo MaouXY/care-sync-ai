@@ -48,7 +48,7 @@ CREATE INDEX idx_child_risk_level ON child(risk_level); -- 优化风险等级筛
 
 -- ai_struct_info扩展结构示例（适配AI分析结果展示页）
 -- {
---   "emotion_trend": [
+--   "emotion_trend": [ -- TODO 莫名其妙没有？？？ 放弃吧，我不知道bug在哪
 --     "孤独",
 --     "平静",
 --     "开心"

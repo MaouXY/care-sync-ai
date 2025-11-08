@@ -57,6 +57,11 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
     @Autowired
     private IAiAnalysisLogService aiAnalysisLogService;
 
+    /**
+     * 获取辅助方案列表
+     * @param schemeQueryDTO 查询条件，包含儿童ID、社工ID、方案状态、开始时间、结束时间等查询参数（均允许空值）
+     * @return 分页结果
+     */
     @Override
     public PageResult<AssistSchemeVO> getSchemeList(SchemeQueryDTO schemeQueryDTO) {
         // 构建查询条件
@@ -90,6 +95,7 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         return new PageResult<>(resultPage.getTotal(), schemeVOList);
     }
 
+    // 未实现
     @Override
     public PageResult<AssistSchemeVO> getSchemeListManage(SchemeQueryDTO schemeQueryDTO) {
         // 这里可以实现管理视角的查询逻辑，例如增加更多筛选条件或权限控制
@@ -97,6 +103,11 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         return getSchemeList(schemeQueryDTO);
     }
 
+    /**
+     * 获取辅助方案详情
+     * @param id 方案ID
+     * @return 方案详情VO
+     */
     @Override
     public DetailSchemeVO getSchemeDetail(Long id) {
         // 根据ID查询方案
@@ -271,6 +282,11 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         return detailVO;
     }
 
+    /**
+     * 生成辅助方案
+     * @param generateSchemeDTO 生成方案DTO，包含儿童ID、社工ID、目标、周期、额外信息等
+     * @return 辅助方案VO
+     */
     @Override
     public AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO) {
         log.info("开始生成AI服务方案，儿童ID: {}", generateSchemeDTO.getChildId());

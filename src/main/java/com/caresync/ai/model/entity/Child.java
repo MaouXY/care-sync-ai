@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import com.caresync.ai.handler.JsonbTypeHandler;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
@@ -100,7 +101,7 @@ public class Child extends Model<Child> {
     @Schema(description = "是否有新的聊天记录")
     private Boolean hasNewChat;
 
-    @TableField("ai_struct_info")
+    @TableField(value = "ai_struct_info", typeHandler = JsonbTypeHandler.class)
     @Schema(description = "AI结构化信息")
     private Object aiStructInfo;
 

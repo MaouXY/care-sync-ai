@@ -1,7 +1,11 @@
 package com.caresync.ai.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import com.caresync.ai.model.DTO.AiAnalysisQueryDTO;
 import com.caresync.ai.model.VO.AiAnalysisResultVO;
 import com.caresync.ai.model.ai.ChatContent;
@@ -19,6 +23,7 @@ import com.caresync.ai.utils.ArkUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,6 +43,7 @@ import java.util.stream.Collectors;
  * @author Maou
  * @since 2025-11-02
  */
+@Slf4j
 @Service
 public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, AiAnalysisLog> implements IAiAnalysisLogService {
 
@@ -55,6 +61,11 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
     @Autowired
     private ArkUtil arkUtil;
 
+    /**
+     * 获取AI分析记录列表
+     * @param aiAnalysisQueryDTO 查询条件，包含儿童ID、姓名、开始时间、结束时间等查询参数（均允许空值）
+     * @return 分页结果
+     */
     @Override
     public PageResult<AiAnalysisResultVO> getAiAnalysisResults(AiAnalysisQueryDTO aiAnalysisQueryDTO) {
         // 获取所有儿童信息
@@ -273,7 +284,7 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
             }
         } catch (JsonProcessingException e) {
             // 解析失败时，设置默认值或记录日志
-            log("解析AI分析结果失败: {}", e.getMessage());
+            log.info("解析AI分析结果失败: {}", e.getMessage());
             // 可以设置一些默认值
             aiAnalysisResultVO.setPotentialProblems("暂无潜在问题");
             aiAnalysisResultVO.setDescription("AI分析结果解析失败");
@@ -281,124 +292,69 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
     }
 
     /**
-     * 根据儿童id生成AI分析结果
+     * 根据儿童id生成AI分析结果 (现在要实现的!!!)
      * @param id 儿童ID
      * @return AI分析结果VO
      */
     @Override
     public AiAnalysisResultVO generateAiAnalysis(Long id) {
-        //构建提示词
-        String systemPrompt = "你是一个专业的儿童情感分析助手，能够根据儿童的聊天记录和情感分析结果，生成详细的情感分析报告。";
-        // TODO 权美珊 完善提示词 下面是需要生成的实例 "--"后面的是注释
-        /**
-         * -- ai_struct_info扩展结构示例（适配AI分析结果展示页）
-         * -- {
-         * --   "emotion_trend": [
-         * --     "孤独",
-         * --     "平静",
-         * --     "开心"
-         * --   ], -- 情感趋势标签（对应图表X轴）
-         * --   "core_needs": [
-         * --     "故事陪伴",
-         * --     "学习辅导"
-         * --   ], -- 核心需求标签（展示在摘要卡片）
-         * --   "potential_problems": "沟通较少", -- 潜在问题标签（红色预警展示）
-         * --   "description": "该儿童存在孤独感，沟通较少，核心需求为故事陪伴, 学习辅导", -- 分析摘要（综合描述）
-         * --   "latest_analysis": "2023-07-15 15:30:00", -- 最新分析时间（页面右上角标注）
-         * --   "emotion_scores": {
-         * --     "情绪稳定性": 75,
-         * --     "焦虑水平": 35,
-         * --     "幸福感": 65,
-         * --     "社交自信": 45
-         * --   }, -- 情感评分指标（雷达图数据）
-         * --   "emotion_history": [
-         * --     {
-         * --       "date": "2023-07-15",
-         * --       "scores": {
-         * --         "情绪稳定性": 75,
-         * --         "焦虑水平": 35,
-         * --         "幸福感": 65,
-         * --         "社交自信": 45
-         * --       }
-         * --     },
-         * --     {
-         * --       "date": "2023-07-08",
-         * --       "scores": {
-         * --         "情绪稳定性": 60,
-         * --         "焦虑水平": 45,
-         * --         "幸福感": 60,
-         * --         "社交自信": 45
-         * --       }
-         * --     },
-         * --     {
-         * --       "date": "2023-07-01",
-         * --       "scores": {
-         * --         "情绪稳定性": 55,
-         * --         "焦虑水平": 50,
-         * --         "幸福感": 55,
-         * --         "社交自信": 40
-         * --       }
-         * --     }
-         * --   ], -- 情感历史记录（趋势图数据）
-         * --   "key_findings": [
-         * --     "情绪稳定性较上周提升了15%，表现出更好的情绪调节能力。",
-         * --     "焦虑水平有所下降，但在提及学校作业时仍表现出一定压力。",
-         * --     "社交互动中的自信心仍然不足，需要更多的鼓励和支持。",
-         * --     "与AI助手的互动频率增加，表明他对这种交流方式感到舒适。"
-         * --   ], -- 关键发现列表（分析结果详情）
-         * --   "recommendations": [
-         * --     {
-         * --       "title": "继续保持与小明的定期沟通",
-         * --       "description": "每周安排1-2次简短的交流，关注他的日常感受和需求。",
-         * --       "priority": "high" -- 优先级（影响展示排序）？？？
-         * --     },
-         * --     {
-         * --       "title": "开展自信心提升活动",
-         * --       "description": "设计一些小明擅长的活动，通过成功体验增强他的自信心。",
-         * --       "priority": "medium"
-         * --     },
-         * --     {
-         * --       "title": "与学校老师保持沟通",
-         * --       "description": "了解小明在学校的表现，共同制定支持计划。"
-         * --     },
-         * --     {
-         * --       "title": "提供情绪管理技巧指导",
-         * --       "description": "教导小明一些简单的情绪调节方法，帮助他应对压力情境。"
-         * --     }
-         * --   ] -- 建议列表（分析结果详情->服务计划生成依据）
-         * -- }
-         *
-         */
+        // 构建专业的情感分析提示词
+        String systemPrompt = """
+        你是一个专业的儿童情感分析专家，专门为留守儿童提供情感状态评估和干预建议。
+        
+        请根据提供的儿童聊天记录和基本信息，生成一份完整的情感分析报告。报告需要严格遵循以下JSON格式,只需输出JSON内容：
+        
+        {"emotion_trend":["情感标签1","情感标签2","情感标签3"],"core_needs":["核心需求1","核心需求2"],"potential_problems":"主要潜在问题描述","description":"综合分析摘要描述","emotion_scores":{"情绪稳定性":数值(0-100),"焦虑水平":数值(0-100),"幸福感":数值(0-100),"社交自信":数值(0-100)},"key_findings":["关键发现描述1","关键发现描述2","关键发现描述3"],"recommendations":[{"title":"建议标题","description":"建议详细描述"}]}
+        
+        分析要求：
+        1. 情感趋势(emotion_trend)：基于聊天内容识别3-5个主要情感标签，如"孤独"、"平静"、"开心"、"焦虑"等
+        2. 核心需求(core_needs)：识别儿童最迫切的情感需求，如"故事陪伴"、"学习辅导"、"社交互动"等
+        3. 潜在问题(potential_problems)：识别可能存在的心理或社交问题，用简洁语言描述
+        4. 情感评分(emotion_scores)：基于0-100分制评估四个维度，数值要合理反映儿童当前状态
+        5. 关键发现(key_findings)：提供3-5个具体的观察发现，包含对比分析和具体数据
+        6. 建议(recommendations)：提供2-5条具体可行的干预建议
+        
+        请确保分析结果客观、专业、具有可操作性，能够为社工制定服务方案提供有效依据。
+        """;
 
         //获取该儿童信息的聊天记录
         //根据id查询儿童信息
         Child child = childService.getById(id);
         if (child == null) {
-            log("未找到ID为{}的儿童信息", id);
+            log.info("未找到ID为{}的儿童信息", id);
             return null;
         }
         //获取该儿童的聊天记录,上次分析时间
         List<ChatMessage> chatMessages = aiChatRecordService.getChatMessagesByChildId(id, child.getAiAnalysisTime());
         if (chatMessages.isEmpty()) {
-            log("儿童ID为{}的聊天记录为空", id);
+            log.info("儿童ID为{}的聊天记录为空,当前分析时间为{}", id, child.getAiAnalysisTime());
             return null;
         }
         //将之前的分结果也添加到提示词中
         String userPrompt = String.format(
-                "儿童姓名：%s，儿童年龄：%d岁，聊天记录：%s，情感分析结果：%s",
-                child.getName(), child.getAge(),
-                String.join("\n", chatMessages.stream().map(msg -> msg.getRole() + ": " + msg.getContent()).collect(Collectors.toList())),
+                "儿童姓名：%s，儿童年龄：%d岁，儿童性别：%s，情感分析结果：%s",
+                child.getName(), child.getAge(), child.getGender(),
                 child.getAiStructInfo() != null ? child.getAiStructInfo() : "暂无情感分析结果"
         );
+
         //发起AI分析请求
         ChatContent chatContent = arkUtil.botChat(ChatRequest.builder().prompt(userPrompt).history(chatMessages).build(),systemPrompt);
-        
+
+        AiAnalysisLog aiAnalysisLog = new AiAnalysisLog();
+        String completeAnalysisResult = "";
         // 保存分析结果到数据库,并更新儿童的分析时间和AI分析信息
         if (chatContent != null) {
             // 构建AiAnalysisLog实体
-            AiAnalysisLog aiAnalysisLog = new AiAnalysisLog();
             aiAnalysisLog.setChildId(id);
-            aiAnalysisLog.setAnalysisResult(chatContent.getContent()); // 使用AI分析结果
+            
+            // 构建完整的分析结果，包含latest_analysis和emotion_history
+            completeAnalysisResult = buildCompleteAnalysisResult(chatContent.getContent(), id, child);
+
+            //log.info("完整的分析结果: {}", completeAnalysisResult);
+
+            // 直接使用JSON字符串，JsonbTypeHandler会处理类型转换
+            aiAnalysisLog.setAnalysisResult(completeAnalysisResult);
+            
             aiAnalysisLog.setTriggerType("AUTO"); // 设置触发类型为自动
             aiAnalysisLog.setCreateTime(LocalDateTime.now());
             
@@ -407,40 +363,118 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
             
             // 更新儿童的分析时间和AI分析信息
             child.setAiAnalysisTime(LocalDateTime.now());
-            child.setAiStructInfo(chatContent.getContent()); // 将AI分析结果保存到儿童的结构化信息中
+            child.setAiStructInfo(completeAnalysisResult); // 将AI分析结果保存到儿童的结构化信息中
             childService.updateById(child);
             
-            log("AI分析结果已保存，记录ID: {}", aiAnalysisLog.getId());
+            log.info("AI分析结果已保存，分析结果: {}", completeAnalysisResult);
         }
         
         // 创建并返回AI分析结果VO
         AiAnalysisResultVO result = new AiAnalysisResultVO();
+        //返回id
+        result.setId(aiAnalysisLog.getId());
         result.setChildId(child.getId());
         result.setChildName(child.getName() + "(" + child.getAge() + "岁)");
         result.setCreateTime(LocalDateTime.now());
-        result.setAiStructInfo(chatContent != null ? chatContent.getContent() : null);
-        
-        // 解析结构化信息
-        if (chatContent != null) {
-            parseStructuredInfo(chatContent.getContent(), result);
-        }
-        
+        // 设置analysisResult为null，解析后的数据直接放在VO对象中
+        result.setAnalysisResult(completeAnalysisResult);
+
+//        // 设置完整的分析结果到aiStructInfo
+//        result.setAiStructInfo(chatContent != null ? completeAnalysisResult : null);
+//        // 解析结构化信息到VO对象的各个字段
+//        if (chatContent != null) {
+//            parseStructuredInfo(completeAnalysisResult, result);
+//        }
+
         return result;
     }
 
-    // 添加日志记录方法
-    private void log(String message) {
-        // 实际项目中应该使用日志框架
-        System.out.println("[LOG] " + message);
-    }
     /**
-     * 记录日志，支持格式化输出
-     * @param message 日志消息模板
-     * @param args 格式化参数
+     * 构建完整的分析结果，包含latest_analysis和emotion_history ????
+     * @param aiAnalysisResult AI分析结果JSON字符串
+     * @param childId 儿童ID
+     * @param child 儿童实体
+     * @return 完整的分析结果JSON字符串
      */
-    private void log(String message, Object... args) {
-        // 支持可变参数的重载方法
-        System.out.println("[LOG] " + String.format(message, args));
+    private String buildCompleteAnalysisResult(String aiAnalysisResult, Long childId, Child child) {
+        try {
+            // 解析AI分析结果
+            JsonNode analysisNode = objectMapper.readTree(aiAnalysisResult);
+            
+            // 创建完整的结果对象
+            Map<String, Object> completeResult = new HashMap<>();
+            
+            // 复制原有的分析结果字段
+            if (analysisNode.has("emotion_trend")) {
+                completeResult.put("emotion_trend", objectMapper.convertValue(analysisNode.get("emotion_trend"), List.class));
+            }
+            if (analysisNode.has("core_needs")) {
+                completeResult.put("core_needs", objectMapper.convertValue(analysisNode.get("core_needs"), List.class));
+            }
+            if (analysisNode.has("potential_problems")) {
+                completeResult.put("potential_problems", analysisNode.get("potential_problems").asText());
+            }
+            if (analysisNode.has("description")) {
+                completeResult.put("description", analysisNode.get("description").asText());
+            }
+            if (analysisNode.has("emotion_scores")) {
+                completeResult.put("emotion_scores", objectMapper.convertValue(analysisNode.get("emotion_scores"), Map.class));
+            }
+            if (analysisNode.has("key_findings")) {
+                completeResult.put("key_findings", objectMapper.convertValue(analysisNode.get("key_findings"), List.class));
+            }
+            if (analysisNode.has("recommendations")) {
+                completeResult.put("recommendations", objectMapper.convertValue(analysisNode.get("recommendations"), List.class));
+            }
+            
+            // 添加latest_analysis字段（当前时间）
+            completeResult.put("latest_analysis", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            
+            // 构建emotion_history
+            List<Map<String, Object>> emotionHistory = new ArrayList<>();
+            
+            // 获取之前的分析记录
+            QueryWrapper<AiAnalysisLog> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("child_id", childId)
+                       .orderByAsc("create_time");
+            List<AiAnalysisLog> previousLogs = aiAnalysisLogMapper.selectList(queryWrapper);
+            
+            // 添加之前的情感历史记录
+            for (AiAnalysisLog aiLog : previousLogs) {
+                try {
+                    JsonNode logNode = objectMapper.readTree(aiLog.getAnalysisResult().toString());
+                    if (logNode.has("emotion_scores") && logNode.has("latest_analysis")) {
+                        Map<String, Object> historyItem = new HashMap<>();
+                        historyItem.put("date", logNode.get("latest_analysis").asText());
+                        historyItem.put("scores", objectMapper.convertValue(logNode.get("emotion_scores"), Map.class));
+                        emotionHistory.add(historyItem);
+                    }
+                } catch (Exception e) {
+                    log.error("解析历史分析记录失败: {}", e.getMessage());
+                }
+            }
+            
+            // 添加当前的情感评分到历史记录
+            if (analysisNode.has("emotion_scores")) {
+                Map<String, Object> currentItem = new HashMap<>();
+                currentItem.put("date", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                currentItem.put("scores", objectMapper.convertValue(analysisNode.get("emotion_scores"), Map.class));
+                emotionHistory.add(currentItem);
+            }
+            
+            // 添加emotion_history到完整结果
+            completeResult.put("emotion_history", emotionHistory);
+
+            String s = objectMapper.writeValueAsString(completeResult);
+            log.info("解析构建结果{}",s);
+            
+            return s;
+            
+        } catch (Exception e) {
+            log.error("构建完整分析结果失败: {}", e.getMessage());
+            // 如果构建失败，返回原始分析结果
+            return aiAnalysisResult;
+        }
     }
 
     /**
@@ -453,7 +487,7 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
         // 根据ID查询儿童信息
         Child child = childService.getById(id);
         if (child == null) {
-            log("未找到ID为{}的儿童信息", id);
+            log.info("未找到ID为{}的儿童信息", id);
             return null;
         }
 

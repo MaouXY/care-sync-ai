@@ -303,7 +303,7 @@ public class AiSimulationController {
         try {
             // 设置系统提示词，引导模型生成结构化的情感分析结果
             String systemPrompt = "你需要对儿童的回复进行情感分析，按照指定的JSON格式输出结果。" +
-                    "格式要求：{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}。" +
+                    "格式要求：{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}" +
                     "情绪名称可以是：开心、伤心、孤独、焦虑、生气、害怕、平静等。" +
                     "置信度范围是0-100的整数。" +
                     "情绪强度是0-100的整数，表示整体情绪的强烈程度。" +
