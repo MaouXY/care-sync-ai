@@ -1,0 +1,61 @@
+{
+   "target_suggest": ["建立规律的学习时间习惯", "培养编程学习的专注力和持续性", "提升数学问题解决的系统性思维", "发展自主学习和探索能力", "建立学习成果记录和反思习惯"],
+   "measures_suggest": [
+     {
+       "week": "学习习惯评估与规划",
+       "details": [
+         {"content": "与张明共同完成学习习惯评估问卷，了解当前学习时间分配情况", "status": "pending"},
+         {"content": "设计编程兴趣探索表，确定适合的编程学习方向和难度", "status": "pending"},
+         {"content": "共同制定个性化数学挑战等级评估标准", "status": "pending"},
+         {"content": "创建学习习惯培养愿景板，可视化展示目标", "status": "pending"}
+       ]
+     },
+     {
+       "week": "规律学习时间建立",
+       "details": [
+         {"content": "设计结合编程元素的可视化每日学习时间表", "status": "pending"},
+         {"content": "开展25分钟专注学习+5分钟休息的番茄钟训练", "status": "pending"},
+         {"content": "建立学习前准备清单（如准备编程工具、数学练习本等）", "status": "pending"},
+         {"content": "家长参与的学习环境优化（减少干扰因素）", "status": "pending"},
+         {"content": "完成每日学习时间记录表，分析专注时长变化", "status": "pending"}
+       ]
+     },
+     {
+       "week": "编程学习专注力训练",
+       "details": [
+         {"content": "开展Scratch基础编程小项目，逐步延长专注时间", "status": "pending"},
+         {"content": "学习使用\"任务分解法\"处理编程问题", "status": "pending"},
+         {"content": "设计编程错误日志记录习惯，培养问题解决耐心", "status": "pending"},
+         {"content": "尝试\"编程故事创作\"活动，提升持续创作能力", "status": "pending"}
+       ]
+     },
+     {
+       "week": "数学思维系统性培养",
+       "details": [
+         {"content": "开展\"趣味数学挑战\"系列任务，学习问题解决四步法", "status": "pending"},
+         {"content": "创建数学错题收集本，学习错误分析方法", "status": "pending"},
+         {"content": "设计数学与编程结合的小项目（如使用编程解决数学问题）", "status": "pending"},
+         {"content": "学习简单的思维导图工具，整理数学概念关系", "status": "pending"}
+       ]
+     },
+     {
+       "week": "自主学习能力提升",
+       "details": [
+         {"content": "介绍适合儿童的编程学习资源库，学习资源查找方法", "status": "pending"},
+         {"content": "设计\"数学问题探索日记\"，记录自主发现的数学问题", "status": "pending"},
+         {"content": "完成一个自主选择的小型编程项目，培养项目管理能力", "status": "pending"},
+         {"content": "学习设定短期学习目标的方法，制作目标达成表", "status": "pending"}
+       ]
+     },
+     {
+       "week": "学习习惯巩固与成果反思",
+       "details": [
+         {"content": "回顾六周学习习惯培养历程，制作进步可视化图表", "status": "pending"},
+         {"content": "完成编程小项目展示与分享，培养成果表达能力", "status": "pending"},
+         {"content": "总结数学挑战成果，分析解题策略的改进", "status": "pending"},
+         {"content": "共同制定长期学习习惯维持计划，设计自我奖励机制", "status": "pending"},
+         {"content": "创建个人学习习惯手册，记录有效方法和心得", "status": "pending"}
+       ]
+     }
+   ]
+}

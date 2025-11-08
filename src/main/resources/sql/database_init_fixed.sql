@@ -225,6 +225,9 @@ CREATE TABLE ai_assist_scheme (
 -- 索引：优化方案查询与状态筛选
 CREATE INDEX idx_scheme_child_worker ON ai_assist_scheme(child_id, worker_id);
 CREATE INDEX idx_scheme_status ON ai_assist_scheme(scheme_status);
+--设置measures为可以null
+        ALTER TABLE ai_assist_scheme
+        ALTER COLUMN measures DROP NOT NULL;
 -- 方案状态管理：草稿(DRAFT)→进行中(IN_PROGRESS)→完成(COMPLETED)
 -- 子任务完成状态直接通过ai_suggestions JSON字段中的details数组实现
 -- details数组中的每个子任务对象包含content(任务内容)和status(完成状态)字段

@@ -15,6 +15,7 @@ import com.caresync.ai.model.ai.ChatContent;
 import com.caresync.ai.model.ai.ChatRequest;
 import com.caresync.ai.model.entity.AiAssistScheme;
 import com.caresync.ai.model.entity.AiAnalysisLog;
+import com.caresync.ai.model.entity.AssistTrackLog;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.AiAssistSchemeMapper;
 import com.caresync.ai.result.PageResult;
@@ -22,13 +23,19 @@ import com.caresync.ai.service.IAiAnalysisLogService;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import com.caresync.ai.service.IChildService;
 import com.caresync.ai.service.ISocialWorkerService;
+import com.caresync.ai.service.IAssistTrackLogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.utils.ArkUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
@@ -63,6 +70,9 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
 
     @Autowired
     private ArkUtil arkUtil;
+
+    @Autowired
+    private IAssistTrackLogService assistTrackLogService;
 
     /**
      * 获取辅助方案列表
@@ -295,6 +305,7 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
      * @return 辅助方案VO
      */
     @Override
+    @Transactional
     public AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO) {
         log.info("开始生成AI服务方案，儿童ID: {}", generateSchemeDTO.getChildId());
 
@@ -331,6 +342,7 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         3. 每周标题(week)：基于儿童的具体情感需求，为每周设计专业、有意义的阶段标题
         4. 任务内容(content)：每个任务要具体、可操作，符合儿童年龄特点，包含具体活动和方法
         5. 状态(status)：所有任务状态统一设置为"pending"，不需要生成assist_track_log_id
+        6. JSON格式验证：确保生成的JSON格式完全正确，特别是字符串内的双引号必须正确转义
         
         每周标题设计要求：
         - 标题要体现专业性和针对性，反映该周的核心服务重点
@@ -408,7 +420,8 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
                     "\nAI情感分析结果：" + analysisResult + 
                     "\n服务目标要求：" + (generateSchemeDTO.getAdditionalInfo() != null ? generateSchemeDTO.getAdditionalInfo() : "基于儿童情感需求制定个性化服务方案") + 
                     "\n请基于以上信息，生成符合JSON格式要求的服务方案。" + 
-                    "\n特别注意：请为每周设计专业、有意义的阶段标题，标题要体现该周的核心服务重点，如'信任关系建立'、'情绪识别训练'、'社交技能培养'等。")
+                    "\n特别注意：请为每周设计专业、有意义的阶段标题，标题要体现该周的核心服务重点，如'信任关系建立'、'情绪识别训练'、'社交技能培养'等。" + 
+                    "\nJSON格式要求：确保生成的JSON格式完全正确，特别是字符串内的双引号必须正确转义（使用\\\"转义），避免JSON解析错误。")
             .build();
 
         // 4. 生成AI建议
@@ -420,36 +433,75 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         scheme.setWorkerId(BaseContext.getCurrentId()); // 默认社工ID，实际应该从登录信息获取
         scheme.setTarget(generateSchemeDTO.getAdditionalInfo() != null ? 
                         generateSchemeDTO.getAdditionalInfo() : "缓解孤独感，提升社交能力");
-        //scheme.setMeasures(generateSchemeDTO.getMeasures() != null ? generateSchemeDTO.getMeasures() : new String[]{"建立信任关系", "情绪识别与表达", "社交技能培养", "总结与展望"});
-        scheme.setCycle(7); // 根据ai生成的方案确定周期,解析measures_suggest中week的数量,默认7周
-        scheme.setSchemeStatus("DRAFT");
-        scheme.setAiSuggestions(aiSuggestions.getContent());
+
+        // 解析AI建议中的周数来确定周期
+        int cycle = parseCycleFromAiSuggestions(aiSuggestions.getContent());
+        scheme.setCycle(cycle);
         
-        // 6. 保存服务方案-保存子任务记录
-        boolean saveSuccess = this.save(scheme);
-        if (!saveSuccess) {
-            log.error("保存服务方案失败，儿童ID: {}", child.getId());
+        scheme.setSchemeStatus("DRAFT");
+        
+        // 解析AI建议内容为JSON对象，用于设置ai_suggestions字段
+//        Object aiSuggestionsObject;
+//        try {
+//            /* // 先尝试修复常见的JSON格式问题
+//            String fixedContent = aiSuggestions.getContent()
+//                .replaceAll("(?<!\\\\)\"", "\\\\\"") // 修复未转义的双引号
+//                .replaceAll("\\n", "\\\\n") // 转义换行符
+//                .replaceAll("\\t", "\\\\t"); // 转义制表符*/
+//
+//            aiSuggestionsObject = objectMapper.readValue(aiSuggestions.getContent(), Object.class);
+//
+//            log.info("AI建议JSON解析成功");
+//        } catch (Exception e) {
+//            log.error("AI建议JSON解析失败，尝试使用原始字符串", e);
+//            // 如果解析失败，尝试使用更宽松的解析方式
+//            try {
+//                // 尝试将内容包装为JSON字符串
+//                String wrappedContent = "{\"content\": \"" + aiSuggestions.getContent().replace("\"", "\\\"") + "\"}";
+//                aiSuggestionsObject = objectMapper.readValue(wrappedContent, Object.class);
+//                log.info("使用包装方式解析AI建议成功");
+//            } catch (Exception ex) {
+//                log.error("所有JSON解析方式均失败，使用原始字符串", ex);
+//                aiSuggestionsObject = aiSuggestions.getContent();
+//            }
+//        }
+//
+//        log.info("AI建议JSON对象: {}", aiSuggestionsObject);
+        
+        // 直接设置Java对象，JsonbTypeHandler会处理类型转换
+        scheme.setAiSuggestions(aiSuggestions.getContent());
+
+
+        log.info("服务方案内容:{}",scheme);
+        
+        // 6. 先保存服务方案，获取自增ID
+        try{
+            this.save(scheme);
+            log.info("成功生成服务方案，方案ID: {}", scheme.getId());
+        }catch (Exception e){
+            log.error("保存服务方案失败:{}", e);
             throw new RuntimeException("生成服务方案失败");
         }
         
-        log.info("成功生成服务方案，方案ID: {}", scheme.getId());
+        // 7. 保存子任务记录到assist_track_log表（使用服务方案的ID），并更新ai_suggestions
+        try {
+            saveTaskDetailsToTrackLog(scheme, child, aiSuggestions.getContent());
+            log.info("成功保存子任务记录到assist_track_log表");
+        } catch (Exception e) {
+            log.error("保存子任务记录失败，但服务方案已保存成功", e);
+            // 子任务保存失败不影响主流程，继续执行
+        }
         
-        // 7. 转换为VO并返回
+        // 8. 转换为VO并返回
         AssistSchemeVO vo = new AssistSchemeVO();
         vo.setId(scheme.getId());
         vo.setChildId(scheme.getChildId());
         vo.setWorkerId(scheme.getWorkerId());
         vo.setTarget(scheme.getTarget());
-        // 修复类型转换问题，处理String数组转为List<String>
-        if (scheme.getMeasures() instanceof String[]) {
-            vo.setMeasures(Arrays.asList((String[]) scheme.getMeasures()));
-        } else if (scheme.getMeasures() instanceof List) {
-            vo.setMeasures((List<String>) scheme.getMeasures());
-        } else {
-            vo.setMeasures(Collections.emptyList());
-        }
+        vo.setMeasures(Arrays.asList("建立信任关系", "情绪识别与表达", "社交技能培养", "总结与展望"));
         vo.setCycle(scheme.getCycle());
         vo.setSchemeStatus(scheme.getSchemeStatus());
+        // 使用更新后的ai_suggestions（包含assist_track_log_id）
         vo.setAiSuggestions(scheme.getAiSuggestions());
         vo.setAiAnalysisId(scheme.getAiAnalysisId());
         vo.setCreateTime(scheme.getCreateTime());
@@ -503,73 +555,200 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
     }
     
     /**
-     * 生成AI建议（模拟实现，实际应该调用AI服务）
+     * 解析AI建议中的周数来确定周期
+     * @param aiSuggestions AI建议的JSON字符串
+     * @return 解析出的周数，如果解析失败则返回默认值7
      */
-    private String generateAiSuggestions(String analysisResult, String additionalInfo) {
+    private int parseCycleFromAiSuggestions(String aiSuggestions) {
         try {
-            // 模拟AI建议生成
-            Map<String, Object> aiSuggestions = new HashMap<>();
+            if (aiSuggestions == null || aiSuggestions.trim().isEmpty()) {
+                log.warn("AI建议为空，使用默认周期7周");
+                return 7;
+            }
             
-            // 目标建议
-            List<String> targetSuggest = Arrays.asList(
-                "降低孤独焦虑，建立积极心态",
-                "增强情绪管理，正确表达感受", 
-                "提升社交能力，改善人际沟通"
-            );
-            aiSuggestions.put("target_suggest", targetSuggest);
+            // 解析JSON
+            JsonNode rootNode = objectMapper.readTree(aiSuggestions);
             
-            // 服务措施建议
-            List<Map<String, Object>> measuresSuggest = new ArrayList<>();
+            // 获取measures_suggest数组
+            JsonNode measuresSuggestNode = rootNode.path("measures_suggest");
+            if (measuresSuggestNode.isMissingNode() || !measuresSuggestNode.isArray()) {
+                log.warn("measures_suggest字段不存在或不是数组，使用默认周期7周");
+                return 7;
+            }
             
-            // 第1周：建立信任关系
-            Map<String, Object> week1 = new HashMap<>();
-            week1.put("week", "建立信任关系");
-            week1.put("details", Arrays.asList(
-                createTaskDetail("初次见面，了解小明的兴趣爱好和日常生活情况。", "pending"),
-                createTaskDetail("一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "pending"),
-                createTaskDetail("与小明约定每周固定的见面时间，增加安全感。", "pending")
-            ));
-            measuresSuggest.add(week1);
+            // 计算周数（measures_suggest数组的长度）
+            int cycle = measuresSuggestNode.size();
             
-            // 第2周：情绪识别与表达
-            Map<String, Object> week2 = new HashMap<>();
-            week2.put("week", "情绪识别与表达");
-            week2.put("details", Arrays.asList(
-                createTaskDetail("通过情绪卡片游戏，帮助小明识别不同的情绪。", "pending"),
-                createTaskDetail("引导小明用绘画的方式表达自己的内心感受。", "pending"),
-                createTaskDetail("教授简单的情绪调节方法，如深呼吸、倾诉等。", "pending")
-            ));
-            measuresSuggest.add(week2);
+            // 验证周数合理性
+            if (cycle <= 0) {
+                log.warn("解析出的周数{}不合理，使用默认周期7周", cycle);
+                return 7;
+            }
             
-            // 第3周：社交技能培养
-            Map<String, Object> week3 = new HashMap<>();
-            week3.put("week", "社交技能培养");
-            week3.put("details", Arrays.asList(
-                createTaskDetail("组织小组活动，鼓励小明与其他小朋友互动。", "pending"),
-                createTaskDetail("角色扮演练习，学习如何与他人友好沟通。", "pending"),
-                createTaskDetail("分享正面社交经验，增强小明的自信心。", "pending")
-            ));
-            measuresSuggest.add(week3);
+            // 限制最大周数为12周，避免异常数据
+            if (cycle > 12) {
+                log.warn("解析出的周数{}超过最大值，限制为12周", cycle);
+                return 12;
+            }
             
-            // 第4周：总结与展望
-            Map<String, Object> week4 = new HashMap<>();
-            week4.put("week", "总结与展望");
-            week4.put("details", Arrays.asList(
-                createTaskDetail("回顾四周的变化，肯定小明的进步。", "pending"),
-                createTaskDetail("共同制定后续计划，帮助小明保持积极状态。", "pending"),
-                createTaskDetail("与家长沟通，分享小明的成长和需要继续关注的方面。", "pending")
-            ));
-            measuresSuggest.add(week4);
+            log.info("成功解析AI建议，确定服务周期为{}周", cycle);
+            return cycle;
             
-            aiSuggestions.put("measures_suggest", measuresSuggest);
-            
-            return objectMapper.writeValueAsString(aiSuggestions);
         } catch (Exception e) {
-            log.error("生成AI建议失败", e);
-            return "{}";
+            log.error("解析AI建议周数失败，使用默认周期7周", e);
+            return 7;
         }
     }
     
+    /**
+     * 保存子任务记录到assist_track_log表，并更新ai_suggestions中的assist_track_log_id
+     * @param scheme 服务方案
+     * @param child 儿童信息
+     * @param aiSuggestionsContent AI建议内容
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void saveTaskDetailsToTrackLog(AiAssistScheme scheme, Child child, String aiSuggestionsContent) {
+        if (aiSuggestionsContent == null || aiSuggestionsContent.trim().isEmpty()) {
+            log.warn("AI建议内容为空，跳过保存子任务记录");
+            return;
+        }
+        
+        try {
+            JsonNode rootNode = objectMapper.readTree(aiSuggestionsContent);
+            JsonNode measuresSuggestNode = rootNode.path("measures_suggest");
+            
+            if (!measuresSuggestNode.isArray()) {
+                log.warn("measures_suggest不是数组格式，跳过保存子任务记录");
+                return;
+            }
+            
+            // 获取当前登录的社工ID
+            Long workerId = getCurrentWorkerId();
+            if (workerId == null) {
+                log.warn("无法获取当前社工ID，跳过保存子任务记录");
+                return;
+            }
+            
+            // 创建可修改的JSON结构
+            ObjectNode updatedRootNode = objectMapper.createObjectNode();
+            
+            // 复制target_suggest字段
+            if (rootNode.has("target_suggest")) {
+                updatedRootNode.set("target_suggest", rootNode.get("target_suggest"));
+            }
+            
+            // 创建新的measures_suggest数组
+            ArrayNode updatedMeasuresSuggestNode = objectMapper.createArrayNode();
+            
+            // 遍历每周的服务措施
+            for (int weekIndex = 0; weekIndex < measuresSuggestNode.size(); weekIndex++) {
+                JsonNode weekNode = measuresSuggestNode.get(weekIndex);
+                JsonNode detailsNode = weekNode.path("details");
+                
+                // 创建新的周节点
+                ObjectNode updatedWeekNode = objectMapper.createObjectNode();
+                updatedWeekNode.set("week", weekNode.get("week"));
+                
+                // 创建新的details数组
+                ArrayNode updatedDetailsNode = objectMapper.createArrayNode();
+                
+                if (detailsNode.isArray()) {
+                    // 遍历每周的子任务
+                    for (int taskIndex = 0; taskIndex < detailsNode.size(); taskIndex++) {
+                        JsonNode taskNode = detailsNode.get(taskIndex);
+                        
+                        // 创建子任务记录
+                        AssistTrackLog trackLog = new AssistTrackLog();
+                        trackLog.setSchemeId(scheme.getId());
+                        trackLog.setChildId(child.getId());
+                        trackLog.setWorkerId(workerId);
+                        trackLog.setWeek(weekIndex + 1); // 周次从1开始
+                        trackLog.setCompletionStatus("pending");
+                        
+                        // 设置记录内容
+                        if (taskNode.has("content")) {
+                            trackLog.setRecordContent(taskNode.get("content").asText());
+                        } else {
+                            trackLog.setRecordContent("未定义的任务内容");
+                        }
+                        
+                        // 保存子任务记录，使用try-catch处理可能的重复键错误
+                        try {
+                            log.info("准备保存第{}周第{}个子任务，记录内容: {}",
+                                        weekIndex + 1, taskIndex + 1, trackLog);
+                            boolean saveSuccess = assistTrackLogService.save(trackLog);
+                            if (saveSuccess) {
+                                log.info("成功保存第{}周第{}个子任务，记录ID: {}", 
+                                        weekIndex + 1, taskIndex + 1, trackLog.getId());
+                                
+                                // 创建更新后的任务详情节点
+                                ObjectNode updatedTaskNode = objectMapper.createObjectNode();
+                                
+                                // 复制原有字段
+                                if (taskNode.has("content")) {
+                                    updatedTaskNode.set("content", taskNode.get("content"));
+                                }
+                                if (taskNode.has("status")) {
+                                    updatedTaskNode.set("status", taskNode.get("status"));
+                                } else {
+                                    updatedTaskNode.put("status", "pending");
+                                }
+                                
+                                // 添加assist_track_log_id字段
+                                updatedTaskNode.put("assist_track_log_id", trackLog.getId());
+                                
+                                updatedDetailsNode.add(updatedTaskNode);
+                                
+                            } else {
+                                log.error("保存第{}周第{}个子任务失败", weekIndex + 1, taskIndex + 1);
+                                // 即使保存失败，也保留原始任务详情（不含assist_track_log_id）
+                                updatedDetailsNode.add(taskNode);
+                            }
+                        } catch (Exception e) {
+                            log.warn("保存第{}周第{}个子任务时出现异常，可能是主键重复，跳过此记录: {}", 
+                                    weekIndex + 1, taskIndex + 1, e.getMessage());
+                            // 继续保存其他记录，不中断整个流程
+                            // 保留原始任务详情（不含assist_track_log_id）
+                            updatedDetailsNode.add(taskNode);
+                        }
+                    }
+                }
+                
+                updatedWeekNode.set("details", updatedDetailsNode);
+                updatedMeasuresSuggestNode.add(updatedWeekNode);
+            }
+            
+            updatedRootNode.set("measures_suggest", updatedMeasuresSuggestNode);
+            
+            // 更新服务方案的ai_suggestions字段
+            String updatedAiSuggestions = objectMapper.writeValueAsString(updatedRootNode);
+            scheme.setAiSuggestions(updatedAiSuggestions);
+            
+            // 保存更新后的服务方案
+            this.updateById(scheme);
+            log.info("成功更新服务方案的ai_suggestions字段，添加了assist_track_log_id");
+            
+        } catch (Exception e) {
+            log.error("解析AI建议并保存子任务记录失败", e);
+            // 子任务保存失败不影响主流程，继续执行
+        }
+    }
+    
+    /**
+     * 获取当前登录的社工ID
+     * @return 社工ID
+     */
+    private Long getCurrentWorkerId() {
+        try {
+            // 这里需要根据实际的认证机制获取当前用户ID
+            // 暂时返回一个默认值，实际项目中需要根据认证系统实现
+            return 1L; // 默认社工ID
+        } catch (Exception e) {
+            log.error("获取当前社工ID失败", e);
+            return null;
+        }
+    }
+
     /**
      * 创建任务详情
      */

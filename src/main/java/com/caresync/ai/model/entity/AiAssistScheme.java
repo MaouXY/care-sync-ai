@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.activerecord.Model;
+import com.caresync.ai.handler.JsonbTypeHandler;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import lombok.Getter;
@@ -47,7 +48,7 @@ public class AiAssistScheme extends Model<AiAssistScheme> {
     @TableField("scheme_status")
     private String schemeStatus;
 
-    @TableField("ai_suggestions")
+    @TableField(value = "ai_suggestions", typeHandler = JsonbTypeHandler.class)
     private Object aiSuggestions;
 
     @TableField("worker_adjust_reason")
