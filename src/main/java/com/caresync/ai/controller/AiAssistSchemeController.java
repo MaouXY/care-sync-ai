@@ -79,8 +79,8 @@ public class AiAssistSchemeController {
      * @param updateSchemeDTO 更新方案DTO
      * @return 服务方案VO
      */
-    @PutMapping("/update/{id}")
-    @Operation(summary = "编辑方案", description = "AI交互式修改服务方案")
+    //@PutMapping("/update/{id}")
+    //@Operation(summary = "编辑方案", description = "AI交互式修改服务方案")
     public Result<AssistSchemeVO> updateScheme(@PathVariable Long id, @RequestBody UpdateSchemeDTO updateSchemeDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -92,8 +92,8 @@ public class AiAssistSchemeController {
      * @param changeSchemeStatusDTO 状态变更DTO
      * @return 服务方案VO
      */
-    @PutMapping("/status/{id}")
-    @Operation(summary = "修改方案状态", description = "更改服务方案的状态")
+    //@PutMapping("/status/{id}")
+    //@Operation(summary = "修改方案状态", description = "更改服务方案的状态")
     public Result<AssistSchemeVO> changeSchemeStatus(@PathVariable Long id, @RequestBody ChangeSchemeStatusDTO changeSchemeStatusDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -103,8 +103,8 @@ public class AiAssistSchemeController {
      * 获取所有方案状态
      * @return 方案状态列表
      */
-    @GetMapping("/status-options")
-    @Operation(summary = "获取方案状态选项", description = "获取所有可用的服务方案状态选项")
+    //@GetMapping("/status-options")
+    //@Operation(summary = "获取方案状态选项", description = "获取所有可用的服务方案状态选项")
     public Result<String[]> getSchemeStatusOptions() {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -115,8 +115,8 @@ public class AiAssistSchemeController {
      * @param schemeQueryDTO 查询参数DTO
      * @return 分页结果
      */
-    @PostMapping("/manage/list")
-    @Operation(summary = "管理视角获取方案列表", description = "管理视角按条件查询所有服务方案列表")
+    //@PostMapping("/manage/list")
+    //@Operation(summary = "管理视角获取方案列表", description = "管理视角按条件查询所有服务方案列表")
     public Result<PageResult<AssistSchemeVO>> getSchemeListManage(@RequestBody SchemeQueryDTO schemeQueryDTO) {
         PageResult<AssistSchemeVO> result = aiAssistSchemeService.getSchemeListManage(schemeQueryDTO);
         return Result.success(result);
@@ -127,8 +127,8 @@ public class AiAssistSchemeController {
      * @param id 方案ID
      * @return 服务方案详情VO
      */
-    @GetMapping("/manage/detail/{id}")
-    @Operation(summary = "管理视角获取方案详情", description = "管理视角获取指定方案的详细信息")
+    //@GetMapping("/manage/detail/{id}")
+    //@Operation(summary = "管理视角获取方案详情", description = "管理视角获取指定方案的详细信息")
     public Result<DetailSchemeVO> getSchemeDetailManage(@PathVariable Long id) {
         DetailSchemeVO detailSchemeVO = aiAssistSchemeService.getSchemeDetail(id);
         if (detailSchemeVO == null) {

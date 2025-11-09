@@ -31,6 +31,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -101,15 +103,20 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         // 按创建时间降序排序
         queryWrapper.orderByDesc(AiAssistScheme::getCreateTime);
 
-        // 执行分页查询
-        Page<AiAssistScheme> page = new Page<>(schemeQueryDTO.getPage(), schemeQueryDTO.getPageSize());
-        Page<AiAssistScheme> resultPage = this.baseMapper.selectPage(page, queryWrapper);
+        // 使用PageHelper进行分页查询
+        PageHelper.startPage(schemeQueryDTO.getPage(), schemeQueryDTO.getPageSize());
+        List<AiAssistScheme> schemeList = this.baseMapper.selectList(queryWrapper);
+        PageInfo<AiAssistScheme> pageInfo = new PageInfo<>(schemeList);
 
         // 转换为VO并补充信息
-        List<AssistSchemeVO> schemeVOList = convertToSchemeVOList(resultPage.getRecords());
+        List<AssistSchemeVO> schemeVOList = convertToSchemeVOList(schemeList);
+
+        //log.info("PageHelper查询结果 - 总数: {}", pageInfo.getTotal());
+        //log.info("PageHelper查询结果 - 总页数: {}", pageInfo.getPages());
+        //log.info("PageHelper查询结果 - 当前页记录数: {}", pageInfo.getSize());
 
         // 构建返回结果
-        return new PageResult<>(resultPage.getTotal(), schemeVOList);
+        return new PageResult<>(pageInfo.getTotal(), schemeVOList);
     }
 
     // 未实现

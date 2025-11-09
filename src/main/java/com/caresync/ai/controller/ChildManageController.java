@@ -57,8 +57,8 @@ public class ChildManageController {
      * @param updateChildInfoDTO 更新儿童信息DTO
      * @return 结果
      */
-    @PutMapping("/{id}")
-    @Operation(summary = "更新儿童信息", description = "更新儿童信息")
+    //@PutMapping("/{id}")
+    //@Operation(summary = "更新儿童信息", description = "更新儿童信息")
     public Result updateChildInfo(@PathVariable Long id, @RequestBody UpdateChildInfoDTO updateChildInfoDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -69,8 +69,8 @@ public class ChildManageController {
      * @param childNo 儿童账号
      * @return 结果
      */
-    @PostMapping("/{childNo}/reset-code")
-    @Operation(summary = "重置儿童验证码", description = "重置儿童登录验证码")
+    //@PostMapping("/{childNo}/reset-code")
+    //@Operation(summary = "重置儿童验证码", description = "重置儿童登录验证码")
     public Result resetChildVerifyCode(@PathVariable String childNo) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -81,8 +81,8 @@ public class ChildManageController {
      * @param createChildDTO 创建儿童账号DTO
      * @return 结果
      */
-    @PostMapping
-    @Operation(summary = "创建儿童账号", description = "创建新的儿童账号")
+    //@PostMapping
+    //@Operation(summary = "创建儿童账号", description = "创建新的儿童账号")
     public Result createChild(@RequestBody CreateChildDTO createChildDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();

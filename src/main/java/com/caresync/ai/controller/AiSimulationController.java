@@ -392,8 +392,8 @@ public class AiSimulationController {
      * @param sessionId 会话ID
      * @return 会话记录列表
      */
-    @GetMapping("/history/{sessionId}")
-    @Operation(summary = "获取训练会话记录", description = "获取指定训练会话的完整聊天记录")
+    //@GetMapping("/history/{sessionId}")
+    //@Operation(summary = "获取训练会话记录", description = "获取指定训练会话的完整聊天记录")
     public Result<List<ChatMessageVO>> getTrainingSessionHistory(@PathVariable String sessionId) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();

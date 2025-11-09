@@ -76,8 +76,8 @@ public class SocialWorkerController {
      * @param updateSocialWorkerInfoDTO 更新社工信息DTO
      * @return 结果
      */
-    @PutMapping("/info")
-    @Operation(summary = "更新个人信息", description = "更新社工个人信息")
+    //@PutMapping("/info")
+    //@Operation(summary = "更新个人信息", description = "更新社工个人信息")
     public Result updateSocialWorkerInfo(@RequestBody UpdateSocialWorkerInfoDTO updateSocialWorkerInfoDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -94,8 +94,8 @@ public class SocialWorkerController {
      * @param pageSize 每页条数
      * @return 分页结果
      */
-    @GetMapping("/chat/sessions")
-    @Operation(summary = "获取会话列表", description = "获取儿童与AI的会话列表")
+    //@GetMapping("/chat/sessions")
+    //@Operation(summary = "获取会话列表", description = "获取儿童与AI的会话列表")
     public Result<PageResult<SessionVO>> getSessionList(@RequestParam(required = false) Long childId, 
                                                        @RequestParam(defaultValue = "1") Integer page, 
                                                        @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -108,8 +108,8 @@ public class SocialWorkerController {
      * @param messageDTO 消息DTO
      * @return 消息VO
      */
-    @PostMapping("/chat/message")
-    @Operation(summary = "发送消息", description = "社工向儿童发送消息")
+    //@PostMapping("/chat/message")
+    //@Operation(summary = "发送消息", description = "社工向儿童发送消息")
     public Result<ChatMessageVO> sendMessage(@RequestBody ChatMessageDTO messageDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success(null);
@@ -122,8 +122,8 @@ public class SocialWorkerController {
      * @param pageSize 每页条数
      * @return 分页结果
      */
-    @GetMapping("/chat/records")
-    @Operation(summary = "获取聊天记录", description = "获取指定会话的聊天记录")
+    //@GetMapping("/chat/records")
+    //@Operation(summary = "获取聊天记录", description = "获取指定会话的聊天记录")
     public Result<PageResult<ChatMessageVO>> getChatRecords(@RequestParam String sessionId, 
                                                           @RequestParam(defaultValue = "1") Integer page, 
                                                           @RequestParam(defaultValue = "50") Integer pageSize) {
@@ -140,8 +140,8 @@ public class SocialWorkerController {
      * @param pageSize 每页条数
      * @return 分页结果
      */
-    @GetMapping("/emergency/calls")
-    @Operation(summary = "获取紧急呼叫记录", description = "获取儿童的紧急呼叫记录")
+    //@GetMapping("/emergency/calls")
+    //@Operation(summary = "获取紧急呼叫记录", description = "获取儿童的紧急呼叫记录")
     public Result<PageResult<EmergencyCallVO>> getEmergencyCalls(@RequestParam(required = false) Long childId, 
                                                               @RequestParam(defaultValue = "1") Integer page, 
                                                               @RequestParam(defaultValue = "10") Integer pageSize) {
