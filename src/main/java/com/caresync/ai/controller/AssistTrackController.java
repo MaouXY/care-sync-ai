@@ -55,8 +55,8 @@ public class AssistTrackController {
      * @param pageSize 每页条数
      * @return 分页结果
      */
-    //@GetMapping("/logs")
-    //@Operation(summary = "获取服务跟踪日志列表", description = "获取指定方案的服务跟踪日志")
+    @GetMapping("/logs")
+    @Operation(summary = "获取服务跟踪日志列表", description = "获取指定方案的服务跟踪日志")
     public Result<PageResult<TrackLogVO>> getTrackLogs(@RequestParam Long schemeId,
                                                     @RequestParam(defaultValue = "1") Integer page,
                                                     @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -69,8 +69,8 @@ public class AssistTrackController {
      * @param addTrackLogDTO 添加日志DTO
      * @return 结果
      */
-    //@PostMapping("/log")
-    //@Operation(summary = "添加服务跟踪日志", description = "添加新的服务跟踪日志")
+    @PostMapping("/log")
+    @Operation(summary = "添加服务跟踪日志", description = "添加新的服务跟踪日志")
     public Result addTrackLog(@RequestBody AddTrackLogDTO addTrackLogDTO) {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success();
@@ -267,9 +267,7 @@ public class AssistTrackController {
     private String convertCompletionStatus(String completionStatus) {
         if ("COMPLETED".equals(completionStatus)) {
             return "completed";
-        } else if ("IN_PROGRESS".equals(completionStatus)) {
-            return "in_progress";
-        } else if ("PENDING".equals(completionStatus)) {
+        } else if ("UNFINISHED".equals(completionStatus)) {
             return "pending";
         } else {
             return completionStatus.toLowerCase();
