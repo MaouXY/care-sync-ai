@@ -45,11 +45,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         log.info("处理请求: {}", requestURI);
 
-        // 1. 从请求头中获取token
+        // 1. 检查请求是否是公开路径，如果是则直接放行
+        if (isPublicPath(requestURI)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2. 从请求头中获取token
         String token = request.getHeader(jwtConfig.getHeader());
         log.info("从请求头获取到的token: {}", token);
 
-        // 2. 如果token不为空，则尝试解析和验证
+        // 3. 如果token不为空，则尝试解析和验证
         if (StringUtils.hasText(token)) {
             try {
                 // 解析JWT令牌
@@ -78,9 +84,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 response.getWriter().write(JsonUtil.toJsonString(Result.error("INVALID_TOKEN")));
                 return;
             }
+        } else {
+            // 4. 如果token为空且不是公开访问路径，则返回401未授权错误
+            if (!isPublicPath(requestURI)) {
+                log.warn("请求路径需要认证，但未提供token: {}", requestURI);
+                response.setStatus(401);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(JsonUtil.toJsonString(Result.error("UNAUTHORIZED")));
+                return;
+            }
         }
 
         // 继续执行过滤器链
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 检查请求路径是否是公开访问的路径
+     * @param requestURI 请求路径
+     * @return 是否是公开路径
+     */
+    private boolean isPublicPath(String requestURI) {
+        // 这里定义所有不需要认证的公开路径
+        return requestURI.equals("/user/register") || 
+               requestURI.equals("/api/social-worker/login") || 
+               requestURI.equals("/api/social-worker/logout") || 
+               requestURI.equals("/api/child/login") || 
+               requestURI.equals("/error") || 
+               requestURI.equals("/common/upload") || 
+               requestURI.equals("/api/judge0/webhook/callback") ||
+               requestURI.startsWith("/doc.html") || 
+               requestURI.startsWith("/swagger-ui/") || 
+               requestURI.startsWith("/v3/api-docs/") || 
+               requestURI.startsWith("/webjars/") || 
+               requestURI.startsWith("/swagger-resources/") || 
+               requestURI.startsWith("/static/") || 
+               requestURI.startsWith("/resources/");
     }
 }
