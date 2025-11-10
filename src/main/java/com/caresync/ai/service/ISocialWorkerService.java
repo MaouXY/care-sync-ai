@@ -8,6 +8,9 @@ import com.caresync.ai.model.VO.SocialWorkerInfoVO;
 import com.caresync.ai.model.entity.SocialWorker;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * <p>
  *  社工服务接口
@@ -49,4 +52,11 @@ public interface ISocialWorkerService extends IService<SocialWorker> {
      * @return 社工首页信息
      */
     SocialWorkerHomeVO getSocialWorkerHome(Long workerId);
+
+    /**
+     * 获取儿童情感数据图表数据
+     * @param workerId 社工ID
+     * @return 图表数据
+     */
+    List<Map<String, Object>> getChildrenEmotionChartData(Long workerId);
 }

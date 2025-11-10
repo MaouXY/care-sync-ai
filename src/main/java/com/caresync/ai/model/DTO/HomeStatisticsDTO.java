@@ -7,15 +7,15 @@ import lombok.Data;
  */
 @Data
 public class HomeStatisticsDTO {
-    // 绑定儿童数
+    // 服务儿童
     private Integer childCount;
     
-    // 今日新增儿童数
-    private Integer newChildCount;
+    // 待处理任务
+    private Integer pendingTaskCount;
     
-    // 待处理紧急呼叫数
-    private Integer pendingEmergencyCount;
-    
-    // 已完成服务方案数
+    // 已完成方案
     private Integer completedSchemeCount;
+    
+    // AI分析结果
+    private Integer aiAnalysisCount;
 }

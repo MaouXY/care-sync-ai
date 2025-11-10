@@ -10,14 +10,18 @@ import java.util.Map;
  */
 @Data
 public class SocialWorkerHomeVO {
-    // 第一行数据（写死）
+    // 第一行数据
     private HomeStatisticsDTO statistics;
     
     // 情感趋势分析
-    private Map<String, Double> emotionScoresAverage;
+    // 儿童情感数据图表数据
+    private List<Map<String, Object>> emotionChartData;
+
+    // 情感数据图表的时间轴（横坐标）
+    private List<String> emotionChartTimeAxis;
     
-    // 儿童情况分布
-    private Map<String, Integer> potentialProblemsDistribution;
+    // 雷达图数据（情感评分占比）
+    private Map<String, Double> radarChartData;
     
     // 待处理任务（进行中的服务方案）
     private List<PendingTaskVO> pendingTasks;

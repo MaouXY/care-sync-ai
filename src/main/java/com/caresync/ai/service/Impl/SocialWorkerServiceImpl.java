@@ -15,18 +15,14 @@ import com.caresync.ai.model.VO.PendingTaskVO;
 import com.caresync.ai.model.VO.RecentActivityVO;
 import com.caresync.ai.model.VO.SocialWorkerHomeVO;
 import com.caresync.ai.model.VO.SocialWorkerInfoVO;
-import com.caresync.ai.model.entity.AssistTrackLog;
-import com.caresync.ai.model.entity.AiAssistScheme;
-import com.caresync.ai.model.entity.Child;
-import com.caresync.ai.model.entity.SocialWorker;
+import com.caresync.ai.model.entity.*;
 import com.caresync.ai.mapper.SocialWorkerMapper;
-import com.caresync.ai.service.IAiAssistSchemeService;
-import com.caresync.ai.service.IAssistTrackLogService;
-import com.caresync.ai.service.IChildService;
-import com.caresync.ai.service.ISocialWorkerService;
+import com.caresync.ai.service.*;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.utils.JwtUtil;
 import com.caresync.ai.utils.PasswordEncoderUtil;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -64,6 +60,9 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
 
     @Autowired
     private IAssistTrackLogService assistTrackLogService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public LoginVO login(SocialWorkerLoginDTO socialWorkerLoginDTO) {
@@ -126,16 +125,126 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
         BaseContext.clear();
     }
 
+    /**
+     * 获取社工首页情感图表数据
+     */
+    @Override
+    public List<Map<String, Object>> getChildrenEmotionChartData(Long workerId) {
+        // 1. 查询与该社工绑定的所有儿童
+        LambdaQueryWrapper<Child> childQueryWrapper = new LambdaQueryWrapper<>();
+        childQueryWrapper.eq(Child::getSocialWorkerId, workerId);
+        List<Child> childList = childService.list(childQueryWrapper);
+
+        // 2. 处理每个儿童的情感数据
+        List<Map<String, Object>> chartSeries = new ArrayList<>();
+
+        for (Child child : childList) {
+            try {
+                Map<String, Object> seriesItem = new HashMap<>();
+                seriesItem.put("type", "bar");
+                seriesItem.put("name", child.getName() + "(" + child.getAge() + "岁)");
+
+                // 获取该儿童的情感数据
+                List<Double> emotionAverages = calculateChildEmotionAverages(child);
+                seriesItem.put("data", emotionAverages);
+
+                chartSeries.add(seriesItem);
+            } catch (Exception e) {
+                log.error("处理儿童{}的情感数据失败: {}",e);
+            }
+        }
+
+        return chartSeries;
+    }
+
+    /**
+     * 计算单个儿童的情感数据平均值
+     */
+    private List<Double> calculateChildEmotionAverages(Child child) {
+        List<Double> emotionAverages = new ArrayList<>();
+
+        // 定义情感指标顺序
+        String[] emotionTypes = {"情绪稳定性", "焦虑水平", "幸福感", "社交自信"};
+
+        try {
+            if (child.getAiStructInfo() != null) {
+                String aiStructInfoStr = child.getAiStructInfo().toString();
+                JsonNode aiStructInfo = objectMapper.readTree(aiStructInfoStr);
+
+                if (aiStructInfo.has("emotion_history")) {
+                    JsonNode emotionHistory = aiStructInfo.get("emotion_history");
+
+                    // 为每个情感指标计算平均值
+                    for (String emotionType : emotionTypes) {
+                        double sum = 0.0;
+                        int count = 0;
+
+                        // 遍历历史记录计算该指标的平均值
+                        for (JsonNode historyItem : emotionHistory) {
+                            if (historyItem.has("scores") && historyItem.get("scores").has(emotionType)) {
+                                double score = historyItem.get("scores").get(emotionType).asDouble();
+                                sum += score;
+                                count++;
+                            }
+                        }
+
+                        // 计算平均值，如果没有数据则设为0
+                        double average = count > 0 ? Math.round((sum / count) * 100) / 100.0 : 0.0;
+                        emotionAverages.add(average);
+                    }
+                } else if (aiStructInfo.has("emotion_scores")) {
+                    // 如果没有历史记录，使用当前的情感评分
+                    JsonNode emotionScores = aiStructInfo.get("emotion_scores");
+                    for (String emotionType : emotionTypes) {
+                        double score = emotionScores.has(emotionType) ?
+                                emotionScores.get(emotionType).asDouble() : 0.0;
+                        emotionAverages.add(score);
+                    }
+                } else {
+                    // 如果没有情感数据，全部设为0
+                    for (int i = 0; i < emotionTypes.length; i++) {
+                        emotionAverages.add(0.0);
+                    }
+                }
+            } else {
+                // 如果没有AI结构化信息，全部设为0
+                for (int i = 0; i < emotionTypes.length; i++) {
+                    emotionAverages.add(0.0);
+                }
+            }
+        } catch (Exception e) {
+            log.error("解析儿童{}的情感数据失败: {}",e);
+            // 发生错误时全部设为0
+            for (int i = 0; i < emotionTypes.length; i++) {
+                emotionAverages.add(0.0);
+            }
+        }
+
+        return emotionAverages;
+    }
+
+    /**
+     * 获取社工首页情感图表数据
+     */
     @Override
     public SocialWorkerHomeVO getSocialWorkerHome(Long workerId) {
         SocialWorkerHomeVO homeVO = new SocialWorkerHomeVO();
 
-        // 1. 获取第一行统计数据（写死）
+        // 1. 获取第一行统计数据
         HomeStatisticsDTO statistics = new HomeStatisticsDTO();
-        statistics.setChildCount(15); // 绑定儿童数
-        statistics.setNewChildCount(2); // 今日新增儿童数
-        statistics.setPendingEmergencyCount(1); // 待处理紧急呼叫数
-        statistics.setCompletedSchemeCount(8); // 已完成服务方案数
+        // 绑定儿童数
+        statistics.setChildCount((int) childService.count(new LambdaQueryWrapper<Child>().eq(Child::getSocialWorkerId, workerId)));
+        //状态为进行中的服务方案数
+        statistics.setPendingTaskCount((int) aiAssistSchemeService.count(new LambdaQueryWrapper<AiAssistScheme>()
+                .eq(AiAssistScheme::getWorkerId, workerId)
+                .eq(AiAssistScheme::getSchemeStatus, "IN_PROGRESS")));// TODO 写成静态常量
+        // 已完成服务方案数
+        statistics.setCompletedSchemeCount((int) aiAssistSchemeService.count(new LambdaQueryWrapper<AiAssistScheme>()
+                .eq(AiAssistScheme::getWorkerId, workerId)
+                .eq(AiAssistScheme::getSchemeStatus, "COMPLETED")));// TODO 写成静态常量
+        // AI分析结果数
+        statistics.setAiAnalysisCount(statistics.getChildCount());
+
         homeVO.setStatistics(statistics);
 
         // 2. 查询与该社工绑定的所有儿童
@@ -143,13 +252,13 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
         childQueryWrapper.eq(Child::getSocialWorkerId, workerId);
         List<Child> childList = childService.list(childQueryWrapper);
 
-        // 3. 计算情感趋势分析（所有儿童的emotion_scores平均值）
-        Map<String, Double> emotionScoresAverage = calculateEmotionScoresAverage(childList);
-        homeVO.setEmotionScoresAverage(emotionScoresAverage);
+//        // 3. 计算情感趋势分析（所有儿童的emotion_scores平均值）
+//        Map<String, Double> emotionScoresAverage = calculateEmotionScoresAverage(childList);
+//        homeVO.setEmotionScoresAverage(emotionScoresAverage);
 
-        // 4. 计算儿童情况分布（potential_problems）
-        Map<String, Integer> potentialProblemsDistribution = calculatePotentialProblemsDistribution(childList);
-        homeVO.setPotentialProblemsDistribution(potentialProblemsDistribution);
+//        // 4. 计算儿童情况分布（potential_problems）
+//        Map<String, Integer> potentialProblemsDistribution = calculatePotentialProblemsDistribution(childList);
+//        homeVO.setPotentialProblemsDistribution(potentialProblemsDistribution);
 
         // 5. 查询待处理任务（进行中的服务方案）
         List<PendingTaskVO> pendingTasks = getPendingTasks(workerId);
@@ -158,6 +267,15 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
         // 6. 查询近期活动（最近完成的子任务）
         List<RecentActivityVO> recentActivities = getRecentActivities(workerId);
         homeVO.setRecentActivities(recentActivities);
+        
+        // 7. 计算儿童情感数据图表数据
+        Map<String, Object> emotionChartResult = calculateEmotionChartData(childList);
+        homeVO.setEmotionChartData((List<Map<String, Object>>) emotionChartResult.get("series"));
+        homeVO.setEmotionChartTimeAxis((List<String>) emotionChartResult.get("timeAxis"));
+        
+        // 8. 计算雷达图数据（情感评分占比）
+        Map<String, Double> radarChartData = calculateRadarChartData(childList);
+        homeVO.setRadarChartData(radarChartData);
 
         return homeVO;
     }
@@ -299,5 +417,192 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
         }
 
         return recentActivities;
+    }
+
+    /**
+     * 计算儿童情感数据图表数据（时间序列）
+     */
+    private Map<String, Object> calculateEmotionChartData(List<Child> childList) {
+        Map<String, Object> chartResult = new HashMap<>();
+        List<Map<String, Object>> chartSeries = new ArrayList<>();
+        
+        // 定义情感指标
+        String[] emotionTypes = {"情绪稳定性", "焦虑水平", "幸福感", "社交自信"};
+        
+        // 收集所有时间点的数据
+        Map<String, Map<String, List<Double>>> timeEmotionData = new HashMap<>();
+        
+        for (Child child : childList) {
+            try {
+                if (child.getAiStructInfo() != null) {
+                    String aiStructInfoStr = child.getAiStructInfo().toString();
+                    JsonNode aiStructInfo = objectMapper.readTree(aiStructInfoStr);
+                    
+                    if (aiStructInfo.has("emotion_history")) {
+                        JsonNode emotionHistory = aiStructInfo.get("emotion_history");
+                        
+                        for (JsonNode historyItem : emotionHistory) {
+                            if (historyItem.has("date") && historyItem.has("scores")) {
+                                String date = historyItem.get("date").asText();
+                                JsonNode scores = historyItem.get("scores");
+                                
+                                // 初始化该时间点的数据结构
+                                if (!timeEmotionData.containsKey(date)) {
+                                    timeEmotionData.put(date, new HashMap<>());
+                                    for (String emotionType : emotionTypes) {
+                                        timeEmotionData.get(date).put(emotionType, new ArrayList<>());
+                                    }
+                                }
+                                
+                                // 添加该儿童在该时间点的分数
+                                for (String emotionType : emotionTypes) {
+                                    if (scores.has(emotionType)) {
+                                        double score = scores.get(emotionType).asDouble();
+                                        timeEmotionData.get(date).get(emotionType).add(score);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("解析儿童{}的情感数据失败: {}",e);
+            }
+        }
+        
+        // 按时间排序
+        List<String> sortedDates = timeEmotionData.keySet().stream()
+                .sorted()
+                .collect(Collectors.toList());
+        
+        // 为每种情感指标创建时间序列数据
+        for (String emotionType : emotionTypes) {
+            Map<String, Object> seriesItem = new HashMap<>();
+            seriesItem.put("type", "line");
+            seriesItem.put("name", emotionType);
+            
+            List<Double> emotionData = new ArrayList<>();
+            
+            for (String date : sortedDates) {
+                List<Double> scores = timeEmotionData.get(date).get(emotionType);
+                if (!scores.isEmpty()) {
+                    // 计算该时间点所有儿童的平均值
+                    double sum = scores.stream().mapToDouble(Double::doubleValue).sum();
+                    double average = Math.round((sum / scores.size()) * 100) / 100.0;
+                    emotionData.add(average);
+                } else {
+                    // 如果没有数据，设为0
+                    emotionData.add(0.0);
+                }
+            }
+            
+            seriesItem.put("data", emotionData);
+            chartSeries.add(seriesItem);
+        }
+        
+        chartResult.put("series", chartSeries);
+        chartResult.put("timeAxis", sortedDates);
+        
+        return chartResult;
+    }
+    
+    /**
+     * 计算雷达图数据（情感评分占比）
+     * 计算所有儿童在四种情感属性上的总分占比
+     */
+    private Map<String, Double> calculateRadarChartData(List<Child> childList) {
+        Map<String, Double> radarData = new HashMap<>();
+        
+        // 定义情感指标
+        String[] emotionTypes = {"情绪稳定性", "焦虑水平", "幸福感", "社交自信"};
+        
+        // 初始化总分和计数
+        Map<String, Double> emotionScoresSum = new HashMap<>();
+        Map<String, Integer> emotionScoresCount = new HashMap<>();
+        
+        for (String emotionType : emotionTypes) {
+            emotionScoresSum.put(emotionType, 0.0);
+            emotionScoresCount.put(emotionType, 0);
+        }
+        
+        // 计算每个情感指标的总分和计数
+        for (Child child : childList) {
+            try {
+                if (child.getAiStructInfo() != null) {
+                    String aiStructInfoStr = child.getAiStructInfo().toString();
+                    JsonNode aiStructInfo = objectMapper.readTree(aiStructInfoStr);
+                    
+                    // 优先使用emotion_scores，如果没有则使用emotion_history的最新记录
+                    if (aiStructInfo.has("emotion_scores")) {
+                        JsonNode emotionScores = aiStructInfo.get("emotion_scores");
+                        for (String emotionType : emotionTypes) {
+                            if (emotionScores.has(emotionType)) {
+                                double score = emotionScores.get(emotionType).asDouble();
+                                emotionScoresSum.put(emotionType, emotionScoresSum.get(emotionType) + score);
+                                emotionScoresCount.put(emotionType, emotionScoresCount.get(emotionType) + 1);
+                            }
+                        }
+                    } else if (aiStructInfo.has("emotion_history")) {
+                        JsonNode emotionHistory = aiStructInfo.get("emotion_history");
+                        if (emotionHistory.size() > 0) {
+                            // 使用最新的历史记录
+                            JsonNode latestRecord = emotionHistory.get(emotionHistory.size() - 1);
+                            if (latestRecord.has("scores")) {
+                                JsonNode scores = latestRecord.get("scores");
+                                for (String emotionType : emotionTypes) {
+                                    if (scores.has(emotionType)) {
+                                        double score = scores.get(emotionType).asDouble();
+                                        emotionScoresSum.put(emotionType, emotionScoresSum.get(emotionType) + score);
+                                        emotionScoresCount.put(emotionType, emotionScoresCount.get(emotionType) + 1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("解析儿童{}的情感数据失败: {}",e);
+            }
+        }
+        
+        // 计算每个情感指标的平均值
+        Map<String, Double> emotionAverages = new HashMap<>();
+        double totalAverage = 0.0;
+        int validEmotionCount = 0;
+        
+        for (String emotionType : emotionTypes) {
+            int count = emotionScoresCount.get(emotionType);
+            if (count > 0) {
+                double average = emotionScoresSum.get(emotionType) / count;
+                emotionAverages.put(emotionType, Math.round(average * 100) / 100.0);
+                totalAverage += average;
+                validEmotionCount++;
+            } else {
+                emotionAverages.put(emotionType, 0.0);
+            }
+        }
+        
+        // 计算占比（每个情感指标的平均值占总平均值的比例）
+        if (validEmotionCount > 0) {
+            double overallAverage = totalAverage / validEmotionCount;
+            
+            for (String emotionType : emotionTypes) {
+                double average = emotionAverages.get(emotionType);
+                if (overallAverage > 0) {
+                    // 计算占比，并转换为百分比（0-100）
+                    double percentage = (average / overallAverage) * 100;
+                    radarData.put(emotionType, Math.round(percentage * 100) / 100.0);
+                } else {
+                    radarData.put(emotionType, 0.0);
+                }
+            }
+        } else {
+            // 如果没有有效数据，全部设为100%
+            for (String emotionType : emotionTypes) {
+                radarData.put(emotionType, 100.0);
+            }
+        }
+        
+        return radarData;
     }
 }
