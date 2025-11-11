@@ -23,6 +23,8 @@ import com.caresync.ai.utils.ArkUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,16 +70,30 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
      */
     @Override
     public PageResult<AiAnalysisResultVO> getAiAnalysisResults(AiAnalysisQueryDTO aiAnalysisQueryDTO) {
-        // 获取所有儿童信息
-        List<Child> allChildren = childService.list();
-
-        // 创建分页查询对象，用于计算分页
+        // 设置分页参数
         int page = aiAnalysisQueryDTO.getPage() != null ? aiAnalysisQueryDTO.getPage() : 1;
         int pageSize = aiAnalysisQueryDTO.getPageSize() != null ? aiAnalysisQueryDTO.getPageSize() : 10;
-        int startIndex = (page - 1) * pageSize;
 
-        // 转换实体列表为VO列表并应用过滤条件
-        List<AiAnalysisResultVO> records = allChildren.stream()
+        // 使用PageHelper进行分页查询
+        PageHelper.startPage(page, pageSize);
+
+        // 构建查询条件
+        LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
+
+        // 按儿童姓名过滤（模糊匹配）
+        if (aiAnalysisQueryDTO.getName() != null && !aiAnalysisQueryDTO.getName().isEmpty()) {
+            queryWrapper.like(Child::getName, aiAnalysisQueryDTO.getName());
+        }
+
+        // 按分析时间倒序排序
+        queryWrapper.orderByDesc(Child::getAiAnalysisTime);
+
+        // 执行查询
+        List<Child> children = childService.list(queryWrapper);
+        PageInfo<Child> pageInfo = new PageInfo<>(children);
+
+        // 转换为VO列表
+        List<AiAnalysisResultVO> records = children.stream()
                 .map(child -> {
                     AiAnalysisResultVO aiAnalysisResultVO = new AiAnalysisResultVO();
                     aiAnalysisResultVO.setChildId(child.getId());
@@ -93,15 +109,8 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
 
                     return aiAnalysisResultVO;
                 })
-                // 应用过滤条件
+                // 应用内存中的过滤条件（这些条件无法在数据库层面直接过滤）
                 .filter(vo -> {
-                    // 按儿童姓名过滤（模糊匹配）
-                    if (aiAnalysisQueryDTO.getName() != null && !aiAnalysisQueryDTO.getName().isEmpty()) {
-                        if (vo.getChildName() == null || !vo.getChildName().contains(aiAnalysisQueryDTO.getName())) {
-                            return false;
-                        }
-                    }
-
                     // 按潜在问题过滤（模糊匹配）
                     if (aiAnalysisQueryDTO.getPotentialProblems() != null && !aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) {
                         if (vo.getPotentialProblems() == null || !vo.getPotentialProblems().contains(aiAnalysisQueryDTO.getPotentialProblems())) {
@@ -118,56 +127,17 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
 
                     return true;
                 })
-                // 按分析时间倒序排序
-                .sorted((v1, v2) -> {
-                    if (v1.getCreateTime() == null) return 1;
-                    if (v2.getCreateTime() == null) return -1;
-                    return v2.getCreateTime().compareTo(v1.getCreateTime());
-                })
-                // 分页处理
-                .skip(startIndex)
-                .limit(pageSize)
                 .collect(Collectors.toList());
 
-        // 获取符合条件的总记录数（再次执行过滤但不分页）
-        long total = allChildren.stream()
-                .map(child -> {
-                    AiAnalysisResultVO aiAnalysisResultVO = new AiAnalysisResultVO();
-                    aiAnalysisResultVO.setChildId(child.getId());
-                    aiAnalysisResultVO.setChildName(child.getName());
-                    aiAnalysisResultVO.setCreateTime(child.getAiAnalysisTime());
+        // 由于在内存中进行了额外过滤，需要重新计算总数
+        // 如果过滤条件为空，直接使用PageHelper的总数
+        if ((aiAnalysisQueryDTO.getPotentialProblems() == null || aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) &&
+                (aiAnalysisQueryDTO.getEmotionTrend() == null || aiAnalysisQueryDTO.getEmotionTrend().isEmpty())) {
+            return new PageResult<>(pageInfo.getTotal(), records);
+        }
 
-                    if (child.getAiStructInfo() != null) {
-                        parseStructuredInfo(child.getAiStructInfo(), aiAnalysisResultVO);
-                    }
-
-                    return aiAnalysisResultVO;
-                })
-                .filter(vo -> {
-                    // 应用相同的过滤条件
-                    if (aiAnalysisQueryDTO.getName() != null && !aiAnalysisQueryDTO.getName().isEmpty()) {
-                        if (vo.getChildName() == null || !vo.getChildName().contains(aiAnalysisQueryDTO.getName())) {
-                            return false;
-                        }
-                    }
-
-                    if (aiAnalysisQueryDTO.getPotentialProblems() != null && !aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) {
-                        if (vo.getPotentialProblems() == null || !vo.getPotentialProblems().contains(aiAnalysisQueryDTO.getPotentialProblems())) {
-                            return false;
-                        }
-                    }
-
-                    if (aiAnalysisQueryDTO.getEmotionTrend() != null && !aiAnalysisQueryDTO.getEmotionTrend().isEmpty()) {
-                        if (vo.getEmotionTrendTags() == null || !vo.getEmotionTrendTags().stream().anyMatch(tag -> tag.contains(aiAnalysisQueryDTO.getEmotionTrend()))) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                })
-                .count();
-
-        // 构建分页结果
+        // 如果有内存过滤条件，需要重新获取总数
+        long total = childService.count(queryWrapper);
         return new PageResult<>(total, records);
     }
 

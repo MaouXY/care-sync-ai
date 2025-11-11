@@ -24,6 +24,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.service.ISocialWorkerService;
 import com.caresync.ai.utils.JwtUtil;
 import com.caresync.ai.utils.PasswordEncoderUtil;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -170,24 +172,35 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
      */
     @Override
     public PageResult<ChildQueueVO> getChildList(ChildQueryDTO childQueryDTO) {
-        // 构建分页对象
-        Page<Child> page = new Page<>(childQueryDTO.getPage(), childQueryDTO.getPageSize());
-
+        // 设置默认分页参数
+        if (childQueryDTO.getPage() == null) {
+            childQueryDTO.setPage(1);
+        }
+        if (childQueryDTO.getPageSize() == null) {
+            childQueryDTO.setPageSize(10);
+        }
+        
+        // 使用PageHelper进行分页
+        PageHelper.startPage(childQueryDTO.getPage(), childQueryDTO.getPageSize());
+        
         // 调用方法构建查询条件
         LambdaQueryWrapper<Child> queryWrapper = buildChildQueryWrapper(childQueryDTO);
-
-        // 执行分页查询
-        Page<Child> childPage = this.page(page, queryWrapper);
-
-        // 转换为ChildQueueVO列表
-        List<ChildQueueVO> childQueueVOList = childPage.getRecords().stream().map(child -> {
+        
+        // 执行查询
+        List<Child> childList = this.list(queryWrapper);
+        
+        // 转换为ChildQueueVO列表，填充所有字段
+        List<ChildQueueVO> childQueueVOList = childList.stream().map(child -> {
             ChildQueueVO childQueueVO = new ChildQueueVO();
             BeanUtils.copyProperties(child, childQueueVO);
             return childQueueVO;
         }).collect(java.util.stream.Collectors.toList());
-
+        
+        // 获取分页信息
+        PageInfo<Child> pageInfo = new PageInfo<>(childList);
+        
         // 构建并返回分页结果
-        return new PageResult<>(childPage.getTotal(), childQueueVOList);
+        return new PageResult<>(pageInfo.getTotal(), childQueueVOList);
     }
 
     /**

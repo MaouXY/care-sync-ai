@@ -374,8 +374,10 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
             LocalDateTime endTime = scheme.getCreateTime().plusDays(scheme.getCycle() != null ? scheme.getCycle() : 7);
             taskVO.setEndTime(endTime);
 
-            // 计算剩余天数
-            long remainingDays = LocalDateTime.now().until(endTime, ChronoUnit.DAYS);
+            // 计算剩余天数（只使用日期部分，忽略时间）
+            LocalDate nowDate = LocalDate.now();
+            LocalDate endDate = endTime.toLocalDate();
+            long remainingDays = nowDate.until(endDate, ChronoUnit.DAYS);
             taskVO.setRemainingDays(Math.max(0, (int) remainingDays));
 
             // 获取儿童姓名
@@ -475,6 +477,41 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
                 .sorted()
                 .collect(Collectors.toList());
         
+        // 处理日期格式，确保只使用日期部分（忽略时间）
+        List<String> processedDates = sortedDates.stream()
+                .map(date -> {
+                    // 如果日期包含时间部分，只取日期部分
+                    if (date.contains("T") || date.contains(" ")) {
+                        return date.split("[T\s]")[0];
+                    }
+                    return date;
+                })
+                .distinct() // 去除重复的日期
+                .collect(Collectors.toList());
+        
+        // 重新组织数据，按处理后的日期分组
+        Map<String, Map<String, List<Double>>> processedTimeEmotionData = new HashMap<>();
+        
+        for (String originalDate : sortedDates) {
+            String processedDate = originalDate;
+            if (originalDate.contains("T") || originalDate.contains(" ")) {
+                processedDate = originalDate.split("[T\s]")[0];
+            }
+            
+            if (!processedTimeEmotionData.containsKey(processedDate)) {
+                processedTimeEmotionData.put(processedDate, new HashMap<>());
+                for (String emotionType : emotionTypes) {
+                    processedTimeEmotionData.get(processedDate).put(emotionType, new ArrayList<>());
+                }
+            }
+            
+            // 合并相同日期的数据
+            for (String emotionType : emotionTypes) {
+                List<Double> scores = timeEmotionData.get(originalDate).get(emotionType);
+                processedTimeEmotionData.get(processedDate).get(emotionType).addAll(scores);
+            }
+        }
+        
         // 为每种情感指标创建时间序列数据
         for (String emotionType : emotionTypes) {
             Map<String, Object> seriesItem = new HashMap<>();
@@ -483,8 +520,8 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
             
             List<Double> emotionData = new ArrayList<>();
             
-            for (String date : sortedDates) {
-                List<Double> scores = timeEmotionData.get(date).get(emotionType);
+            for (String date : processedDates) {
+                List<Double> scores = processedTimeEmotionData.get(date).get(emotionType);
                 if (!scores.isEmpty()) {
                     // 计算该时间点所有儿童的平均值
                     double sum = scores.stream().mapToDouble(Double::doubleValue).sum();
@@ -501,7 +538,7 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
         }
         
         chartResult.put("series", chartSeries);
-        chartResult.put("timeAxis", sortedDates);
+        chartResult.put("timeAxis", processedDates);
         
         return chartResult;
     }

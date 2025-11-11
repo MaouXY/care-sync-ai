@@ -16,6 +16,13 @@ public class ChildQueueVO implements Serializable {
     private String childNo;
     private String name;
     private Integer age;
+    private String gender;
+    private String riskLevel;
+    private String serviceStatus;
+    private String guardianName;
+    private String guardianPhone;
+    private String phone;
+    private String address;
     private Boolean hasNewChat;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
