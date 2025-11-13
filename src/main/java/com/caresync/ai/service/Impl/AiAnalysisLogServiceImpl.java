@@ -96,6 +96,14 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
             queryWrapper.apply("ai_struct_info->'emotion_trend' @> {0}::jsonb", "[\"" + aiAnalysisQueryDTO.getEmotionTrend() + "\"]");
         }
 
+        // 按时间范围过滤（添加类型转换，将字符串转换为timestamp）
+        if (aiAnalysisQueryDTO.getStartTime() != null && !aiAnalysisQueryDTO.getStartTime().isEmpty()) {
+            queryWrapper.apply("ai_analysis_time >= {0}::timestamp", aiAnalysisQueryDTO.getStartTime());
+        }
+        if (aiAnalysisQueryDTO.getEndTime() != null && !aiAnalysisQueryDTO.getEndTime().isEmpty()) {
+            queryWrapper.apply("ai_analysis_time <= {0}::timestamp", aiAnalysisQueryDTO.getEndTime());
+        }
+
         // 按分析时间倒序排序
         queryWrapper.orderByDesc(Child::getAiAnalysisTime);
 
