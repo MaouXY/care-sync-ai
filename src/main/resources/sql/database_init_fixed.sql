@@ -46,6 +46,13 @@ CREATE INDEX idx_child_social_worker_id ON child(social_worker_id); -- 优化社
 CREATE INDEX idx_child_service_status ON child(service_status); -- 优化服务状态筛选
 CREATE INDEX idx_child_risk_level ON child(risk_level); -- 优化风险等级筛选
 
+-- 为ai_struct_info字段添加GIN索引，支持emotion_trend和description的全文搜索
+CREATE INDEX idx_child_ai_struct_info_gin ON child USING GIN (ai_struct_info);
+CREATE INDEX idx_child_emotion_trend_gin ON child USING GIN ((ai_struct_info->'emotion_trend'));
+-- 修复：使用simple配置替代chinese，避免配置不存在的问题
+CREATE INDEX idx_child_description_gin ON child USING GIN (to_tsvector('simple', ai_struct_info->>'description'));
+
+
 -- ai_struct_info扩展结构示例（适配AI分析结果展示页）
 -- {
 --   "emotion_trend": [ -- TODO 莫名其妙没有？？？ 放弃吧，我不知道bug在哪

@@ -85,6 +85,17 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
             queryWrapper.like(Child::getName, aiAnalysisQueryDTO.getName());
         }
 
+        // 按潜在问题过滤（使用JSONB查询，利用GIN索引）
+        if (aiAnalysisQueryDTO.getPotentialProblems() != null && !aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) {
+            queryWrapper.apply("ai_struct_info->>'potential_problems' ILIKE {0}", "%" + aiAnalysisQueryDTO.getPotentialProblems() + "%");
+        }
+
+        // 按情感趋势过滤（使用JSONB数组查询，利用GIN索引）
+        if (aiAnalysisQueryDTO.getEmotionTrend() != null && !aiAnalysisQueryDTO.getEmotionTrend().isEmpty()) {
+            // 在 {0} 后面添加 ::jsonb 来强制转换类型
+            queryWrapper.apply("ai_struct_info->'emotion_trend' @> {0}::jsonb", "[\"" + aiAnalysisQueryDTO.getEmotionTrend() + "\"]");
+        }
+
         // 按分析时间倒序排序
         queryWrapper.orderByDesc(Child::getAiAnalysisTime);
 
@@ -109,36 +120,9 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
 
                     return aiAnalysisResultVO;
                 })
-                // 应用内存中的过滤条件（这些条件无法在数据库层面直接过滤）
-                .filter(vo -> {
-                    // 按潜在问题过滤（模糊匹配）
-                    if (aiAnalysisQueryDTO.getPotentialProblems() != null && !aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) {
-                        if (vo.getPotentialProblems() == null || !vo.getPotentialProblems().contains(aiAnalysisQueryDTO.getPotentialProblems())) {
-                            return false;
-                        }
-                    }
-
-                    // 按情感趋势过滤（模糊匹配）
-                    if (aiAnalysisQueryDTO.getEmotionTrend() != null && !aiAnalysisQueryDTO.getEmotionTrend().isEmpty()) {
-                        if (vo.getEmotionTrendTags() == null || !vo.getEmotionTrendTags().stream().anyMatch(tag -> tag.contains(aiAnalysisQueryDTO.getEmotionTrend()))) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                })
                 .collect(Collectors.toList());
 
-        // 由于在内存中进行了额外过滤，需要重新计算总数
-        // 如果过滤条件为空，直接使用PageHelper的总数
-        if ((aiAnalysisQueryDTO.getPotentialProblems() == null || aiAnalysisQueryDTO.getPotentialProblems().isEmpty()) &&
-                (aiAnalysisQueryDTO.getEmotionTrend() == null || aiAnalysisQueryDTO.getEmotionTrend().isEmpty())) {
-            return new PageResult<>(pageInfo.getTotal(), records);
-        }
-
-        // 如果有内存过滤条件，需要重新获取总数
-        long total = childService.count(queryWrapper);
-        return new PageResult<>(total, records);
+        return new PageResult<>(pageInfo.getTotal(), records);
     }
 
     /**

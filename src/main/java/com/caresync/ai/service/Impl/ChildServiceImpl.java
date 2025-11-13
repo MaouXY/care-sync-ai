@@ -172,32 +172,26 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
      */
     @Override
     public PageResult<ChildQueueVO> getChildList(ChildQueryDTO childQueryDTO) {
-        // 设置默认分页参数
-        if (childQueryDTO.getPage() == null) {
-            childQueryDTO.setPage(1);
-        }
-        if (childQueryDTO.getPageSize() == null) {
-            childQueryDTO.setPageSize(10);
-        }
+        // 设置分页参数
+        int page = childQueryDTO.getPage() != null ? childQueryDTO.getPage() : 1;
+        int pageSize = childQueryDTO.getPageSize() != null ? childQueryDTO.getPageSize() : 10;
         
-        // 使用PageHelper进行分页
-        PageHelper.startPage(childQueryDTO.getPage(), childQueryDTO.getPageSize());
+        // 使用PageHelper进行分页查询
+        PageHelper.startPage(page, pageSize);
         
         // 调用方法构建查询条件
         LambdaQueryWrapper<Child> queryWrapper = buildChildQueryWrapper(childQueryDTO);
         
         // 执行查询
-        List<Child> childList = this.list(queryWrapper);
+        List<Child> children = this.list(queryWrapper);
+        PageInfo<Child> pageInfo = new PageInfo<>(children);
         
-        // 转换为ChildQueueVO列表，填充所有字段
-        List<ChildQueueVO> childQueueVOList = childList.stream().map(child -> {
+        // 转换为ChildQueueVO列表
+        List<ChildQueueVO> childQueueVOList = children.stream().map(child -> {
             ChildQueueVO childQueueVO = new ChildQueueVO();
             BeanUtils.copyProperties(child, childQueueVO);
             return childQueueVO;
         }).collect(java.util.stream.Collectors.toList());
-        
-        // 获取分页信息
-        PageInfo<Child> pageInfo = new PageInfo<>(childList);
         
         // 构建并返回分页结果
         return new PageResult<>(pageInfo.getTotal(), childQueueVOList);
