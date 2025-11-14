@@ -12,6 +12,7 @@ public class AiAnalysisQueryDTO {
     private String emotionTrend; // 情感趋势（模糊查询，允许空值）
     private String startTime; // 开始时间（格式：yyyy-MM-dd HH:mm:ss）
     private String endTime; // 结束时间（格式：yyyy-MM-dd HH:mm:ss）
+    private String description; // 描述信息（模糊查询，允许空值）
     private Integer page=1; // 页码
     private Integer pageSize=10; // 每页条数
 }
