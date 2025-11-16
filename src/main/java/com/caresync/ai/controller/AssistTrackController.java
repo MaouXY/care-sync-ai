@@ -1,10 +1,9 @@
 package com.caresync.ai.controller;
 
 import com.caresync.ai.model.DTO.AddTrackLogDTO;
+import com.caresync.ai.model.DTO.SchemeLogQueryDTO;
 import com.caresync.ai.model.DTO.UpdateTrackLogDTO;
-import com.caresync.ai.model.VO.TrackLogVO;
-import com.caresync.ai.model.VO.AssistSchemeVO;
-import com.caresync.ai.model.VO.DetailSchemeVO;
+import com.caresync.ai.model.VO.*;
 import com.caresync.ai.model.entity.AiAssistScheme;
 import com.caresync.ai.model.entity.AssistTrackLog;
 import com.caresync.ai.model.entity.Child;
@@ -63,6 +62,33 @@ public class AssistTrackController {
         // 暂时返回成功，不实现具体业务逻辑
         return Result.success(null);
     }
+
+    /**
+     * 获取任务统计信息
+     * @param schemeId 方案ID
+     * @return 任务统计信息
+     */
+//    @GetMapping("/task/statistics/{schemeId}")
+//    @Operation(summary = "获取任务统计信息", description = "获取指定方案的任务统计信息（完成任务数、进行中任务数、总任务数）")
+//    public Result<TaskStatisticsVO> getTaskStatistics(@PathVariable Long schemeId) {
+//        try {
+//            log.info("获取任务统计信息，方案ID: {}", schemeId);
+//
+//            // 验证参数
+//            if (schemeId == null) {
+//                log.warn("方案ID不能为空");
+//                return Result.error("方案ID不能为空");
+//            }
+//
+//            // 调用Service层方法获取任务统计信息
+//            TaskStatisticsVO taskStatistics = assistTrackLogService.getTaskStatistics(schemeId);
+//            return Result.success(taskStatistics);
+//
+//        } catch (Exception e) {
+//            log.error("获取任务统计信息失败，方案ID: {}", schemeId, e);
+//            return Result.error("获取任务统计信息失败");
+//        }
+//    }
 
     /**
      * 添加服务跟踪日志
@@ -173,66 +199,43 @@ public class AssistTrackController {
                 return false;
             }
             
-            String aiSuggestions;
-            if (aiSuggestionsObj instanceof String) {
-                aiSuggestions = (String) aiSuggestionsObj;
-            } else {
-                // 如果不是String类型，转换为JSON字符串
-                aiSuggestions = objectMapper.writeValueAsString(aiSuggestionsObj);
-            }
-            
-            // 解析JSON
-            Map<String, Object> aiSuggestionsMap = objectMapper.readValue(aiSuggestions, new TypeReference<Map<String, Object>>() {});
-            
-            // 获取measures_suggest
-            Object measuresSuggest = aiSuggestionsMap.get("measures_suggest");
-            if (!(measuresSuggest instanceof List)) {
+            // 解析JSON到DetailSchemeVO对象
+            DetailSchemeVO detailSchemeVO = parseAiSuggestionsToDetailSchemeVO(aiSuggestionsObj);
+            if (detailSchemeVO == null || detailSchemeVO.getMeasuresSuggest() == null) {
                 log.warn("服务方案measures_suggest格式不正确，方案ID: {}", scheme.getId());
                 return false;
             }
             
-            List<Map<String, Object>> measuresList = (List<Map<String, Object>>) measuresSuggest;
             boolean taskUpdated = false;
             
             // 遍历measures_suggest，找到对应的子任务
-            for (Map<String, Object> measure : measuresList) {
-                Object detailsObj = measure.get("details");
-                if (!(detailsObj instanceof List)) {
+            for (DetailSchemeVO.WeeklyMeasure measure : detailSchemeVO.getMeasuresSuggest()) {
+                if (measure.getDetails() == null) {
                     continue;
                 }
                 
-                List<Map<String, Object>> detailsList = (List<Map<String, Object>>) detailsObj;
-                
                 // 遍历details，找到对应的子任务
-                for (Map<String, Object> detail : detailsList) {
-                    Object trackLogIdObj = detail.get("assist_track_log_id");
-                    if (trackLogIdObj != null) {
-                        Long trackLogId = null;
-                        if (trackLogIdObj instanceof Long) {
-                            trackLogId = (Long) trackLogIdObj;
-                        } else if (trackLogIdObj instanceof Integer) {
-                            trackLogId = ((Integer) trackLogIdObj).longValue();
+                for (DetailSchemeVO.TaskDetail detail : measure.getDetails()) {
+                    Long trackLogId = detail.getAssistTrackLogId();
+                    
+                    // 找到对应的子任务
+                    if (trackLogId != null && trackLogId.equals(trackLog.getId())) {
+                        // 更新子任务状态
+                        if (updateTrackLogDTO.getCompletionStatus() != null) {
+                            // 转换状态值：COMPLETED -> completed, UNFINISHED -> pending
+                            String status = convertCompletionStatus(updateTrackLogDTO.getCompletionStatus());
+                            detail.setStatus(status);
+                            log.debug("更新子任务状态，日志ID: {}, 状态: {}", trackLogId, status);
                         }
                         
-                        // 找到对应的子任务
-                        if (trackLogId != null && trackLogId.equals(trackLog.getId())) {
-                            // 更新子任务状态
-                            if (updateTrackLogDTO.getCompletionStatus() != null) {
-                                // 转换状态值：COMPLETED -> completed, UNFINISHED -> pending
-                                String status = convertCompletionStatus(updateTrackLogDTO.getCompletionStatus());
-                                detail.put("status", status);
-                                log.debug("更新子任务状态，日志ID: {}, 状态: {}", trackLogId, status);
-                            }
-                            
-                            // 更新记录内容
-                            if (updateTrackLogDTO.getRecordContent() != null) {
-                                detail.put("content", updateTrackLogDTO.getRecordContent());
-                                log.debug("更新子任务内容，日志ID: {}, 内容: {}", trackLogId, updateTrackLogDTO.getRecordContent());
-                            }
-                            
-                            taskUpdated = true;
-                            break;
+                        // 更新记录内容
+                        if (updateTrackLogDTO.getRecordContent() != null) {
+                            detail.setContent(updateTrackLogDTO.getRecordContent());
+                            log.debug("更新子任务内容，日志ID: {}, 内容: {}", trackLogId, updateTrackLogDTO.getRecordContent());
                         }
+                        
+                        taskUpdated = true;
+                        break;
                     }
                 }
                 
@@ -242,8 +245,8 @@ public class AssistTrackController {
             }
             
             if (taskUpdated) {
-                // 更新ai_suggestions
-                String updatedAiSuggestions = objectMapper.writeValueAsString(aiSuggestionsMap);
+                // 将更新后的DetailSchemeVO转换回JSON字符串
+                String updatedAiSuggestions = objectMapper.writeValueAsString(detailSchemeVO);
                 scheme.setAiSuggestions(updatedAiSuggestions);
                 
                 // 保存更新
@@ -258,6 +261,95 @@ public class AssistTrackController {
         } catch (Exception e) {
             log.error("更新服务方案子任务状态异常，方案ID: {}, 日志ID: {}", scheme.getId(), trackLog.getId(), e);
             return false;
+        }
+    }
+    
+    /**
+     * 将ai_suggestions解析为DetailSchemeVO对象
+     */
+    private DetailSchemeVO parseAiSuggestionsToDetailSchemeVO(Object aiSuggestionsObj) {
+        try {
+            if (aiSuggestionsObj == null) {
+                return null;
+            }
+            
+            String aiSuggestions;
+            if (aiSuggestionsObj instanceof String) {
+                aiSuggestions = (String) aiSuggestionsObj;
+            } else {
+                // 如果不是String类型，转换为JSON字符串
+                aiSuggestions = objectMapper.writeValueAsString(aiSuggestionsObj);
+            }
+            
+            // 解析JSON到Map
+            Map<String, Object> aiSuggestionsMap = objectMapper.readValue(aiSuggestions, new TypeReference<Map<String, Object>>() {});
+            
+            // 创建DetailSchemeVO对象
+            DetailSchemeVO detailSchemeVO = new DetailSchemeVO();
+            
+            // 提取target_suggest
+            Object targetSuggest = aiSuggestionsMap.get("target_suggest");
+            if (targetSuggest instanceof List) {
+                detailSchemeVO.setTargetSuggest((List<String>) targetSuggest);
+            }
+            
+            // 提取measures_suggest并转换为WeeklyMeasure列表
+            Object measuresSuggest = aiSuggestionsMap.get("measures_suggest");
+            if (measuresSuggest instanceof List) {
+                List<Map<String, Object>> measuresList = (List<Map<String, Object>>) measuresSuggest;
+                List<DetailSchemeVO.WeeklyMeasure> weeklyMeasures = new ArrayList<>();
+                
+                for (Map<String, Object> measure : measuresList) {
+                    DetailSchemeVO.WeeklyMeasure weeklyMeasure = new DetailSchemeVO.WeeklyMeasure();
+                    
+                    // 设置周数
+                    String week = (String) measure.get("week");
+                    weeklyMeasure.setWeek(week);
+                    
+                    // 设置任务详情
+                    Object detailsObj = measure.get("details");
+                    if (detailsObj instanceof List) {
+                        List<Map<String, Object>> detailsList = (List<Map<String, Object>>) detailsObj;
+                        List<DetailSchemeVO.TaskDetail> taskDetails = new ArrayList<>();
+                        
+                        for (Map<String, Object> detail : detailsList) {
+                            DetailSchemeVO.TaskDetail taskDetail = new DetailSchemeVO.TaskDetail();
+                            
+                            // 设置任务内容
+                            String content = (String) detail.get("content");
+                            taskDetail.setContent(content);
+                            
+                            // 设置任务状态
+                            String status = (String) detail.get("status");
+                            taskDetail.setStatus(status != null ? status : "pending");
+                            
+                            // 设置关联的跟踪日志ID
+                            Object trackLogIdObj = detail.get("assist_track_log_id");
+                            if (trackLogIdObj != null) {
+                                if (trackLogIdObj instanceof Long) {
+                                    taskDetail.setAssistTrackLogId((Long) trackLogIdObj);
+                                } else if (trackLogIdObj instanceof Integer) {
+                                    taskDetail.setAssistTrackLogId(((Integer) trackLogIdObj).longValue());
+                                }
+                            }
+                            
+                            taskDetails.add(taskDetail);
+                        }
+                        
+                        weeklyMeasure.setDetails(taskDetails);
+                    }
+                    
+                    weeklyMeasures.add(weeklyMeasure);
+                }
+                
+                detailSchemeVO.setMeasuresSuggest(weeklyMeasures);
+            }
+            
+            return detailSchemeVO;
+            
+        } catch (Exception e) {
+            log.error("解析ai_suggestions到DetailSchemeVO失败", e);
+            return null;
         }
     }
     
@@ -335,79 +427,15 @@ public class AssistTrackController {
     
     /**
      * 获取服务方案列表（排除DRAFT状态）
-     * @param page 页码
-     * @param pageSize 每页条数
+     * @param queryDTO 查询条件
      * @return 分页结果
      */
-    @GetMapping("/scheme/list")
+    @PostMapping("/scheme/list")
     @Operation(summary = "获取服务方案列表", description = "获取服务方案列表，排除草稿状态")
-    public Result<PageResult<Map<String, Object>>> getSchemeList(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "10") Integer pageSize) {
-        
+    public Result<PageResult<AssistSchemeLogVO>> getSchemeList(@RequestBody SchemeLogQueryDTO queryDTO) {
         try {
-            // 验证页码和每页条数
-            if (page < 1 || pageSize < 1) {
-                log.warn("无效的分页参数: page={}, pageSize={}", page, pageSize);
-                return Result.success(new PageResult<>(0L, Collections.emptyList()));
-            }
-            
-            // 查询所有方案（排除DRAFT状态）
-            List<AiAssistScheme> allSchemes = aiAssistSchemeService.list();
-            log.debug("查询到的方案总数: {}", allSchemes.size());
-            
-            List<AiAssistScheme> validSchemes = allSchemes.stream()
-                    .filter(scheme -> !"DRAFT".equals(scheme.getSchemeStatus()))
-                    .collect(Collectors.toList());
-            log.debug("有效的方案数量（排除DRAFT状态）: {}", validSchemes.size());
-            
-            // 分页处理
-            int startIndex = (page - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, validSchemes.size());
-            List<AiAssistScheme> pageSchemes;
-            if (startIndex >= validSchemes.size()) {
-                pageSchemes = Collections.emptyList();
-            } else {
-                pageSchemes = validSchemes.subList(startIndex, endIndex);
-            }
-            log.debug("当前页（第{}页）方案数量: {}", page, pageSchemes.size());
-            
-            // 转换为包含详细信息的列表
-            List<Map<String, Object>> schemeList = new ArrayList<>();
-            for (AiAssistScheme scheme : pageSchemes) {
-                Map<String, Object> schemeInfo = new HashMap<>();
-                schemeInfo.put("id", scheme.getId());
-                schemeInfo.put("target", scheme.getTarget());
-                schemeInfo.put("schemeStatus", scheme.getSchemeStatus());
-                
-                // 获取儿童信息
-                Child child = childService.getById(scheme.getChildId());
-                if (child != null) {
-                    schemeInfo.put("childId", child.getId());
-                    schemeInfo.put("childName", child.getName());
-                    schemeInfo.put("childAge", child.getAge());
-                } else {
-                    schemeInfo.put("childId", scheme.getChildId());
-                    schemeInfo.put("childName", "未找到该儿童");
-                    schemeInfo.put("childAge", null);
-                    log.warn("方案[{}]关联的儿童ID[{}]不存在", scheme.getId(), scheme.getChildId());
-                }
-                
-                // 计算完成进度
-                double completionRate = calculateCompletionRate(scheme);
-                schemeInfo.put("completionRate", completionRate);
-                
-                // 计算剩余时间
-                int remainingDays = calculateRemainingDays(scheme);
-                schemeInfo.put("remainingDays", remainingDays);
-                
-                schemeList.add(schemeInfo);
-            }
-            
-            // 构建分页结果
-            PageResult<Map<String, Object>> pageResult = new PageResult<>(
-                    (long) validSchemes.size(), schemeList);
-            
+            // 调用Service层方法获取方案列表
+            PageResult<AssistSchemeLogVO> pageResult = assistTrackLogService.getSchemeList(queryDTO);
             return Result.success(pageResult);
         } catch (Exception e) {
             log.error("获取服务方案列表失败", e);
@@ -432,66 +460,43 @@ public class AssistTrackController {
                 return 0;
             }
             
-            String aiSuggestions;
-            if (aiSuggestionsObj instanceof String) {
-                aiSuggestions = (String) aiSuggestionsObj;
-                if (aiSuggestions.isEmpty()) {
-                    log.warn("方案[{}]的aiSuggestions为空字符串", scheme.getId());
-                    return 0;
-                }
-            } else {
-                // 如果不是String类型，尝试转换为JSON字符串
-                try {
-                    aiSuggestions = objectMapper.writeValueAsString(aiSuggestionsObj);
-                } catch (Exception e) {
-                    log.error("方案[{}]的aiSuggestions转换为字符串失败", scheme.getId(), e);
-                    return 0;
+            // 解析JSON到DetailSchemeVO对象
+            DetailSchemeVO detailSchemeVO = parseAiSuggestionsToDetailSchemeVO(aiSuggestionsObj);
+            if (detailSchemeVO == null || detailSchemeVO.getMeasuresSuggest() == null) {
+                log.warn("方案[{}]的measures_suggest格式不正确", scheme.getId());
+                return 0;
+            }
+            
+            log.debug("方案[{}]解析到{}个措施建议", scheme.getId(), detailSchemeVO.getMeasuresSuggest().size());
+            int totalTasks = 0;
+            double completedTasks = 0;
+            
+            // 遍历measures_suggest计算任务完成情况
+            for (DetailSchemeVO.WeeklyMeasure measure : detailSchemeVO.getMeasuresSuggest()) {
+                if (measure.getDetails() != null) {
+                    for (DetailSchemeVO.TaskDetail detail : measure.getDetails()) {
+                        totalTasks++;
+                        String status = detail.getStatus() != null ? detail.getStatus() : "pending";
+                        
+                        if ("completed".equals(status)) {
+                            completedTasks++;
+                        } else if ("in_progress".equals(status)) {
+                            // 进行中的任务算完成一半
+                            completedTasks += 0.5;
+                        }
+                        
+                        log.trace("任务状态: {}, 累计完成任务: {}, 总任务数: {}", status, completedTasks, totalTasks);
+                    }
                 }
             }
             
-            log.debug("开始解析方案[{}]的aiSuggestions: {}", scheme.getId(), aiSuggestions);
-            Map<String, Object> aiSuggestionsMap = objectMapper.readValue(aiSuggestions, new TypeReference<Map<String, Object>>() {});
-            Object measuresSuggest = aiSuggestionsMap.get("measures_suggest");
-            
-            if (measuresSuggest instanceof List) {
-                List<Map<String, Object>> measuresList = (List<Map<String, Object>>) measuresSuggest;
-                log.debug("方案[{}]解析到{}个措施建议", scheme.getId(), measuresList.size());
-                int totalTasks = 0;
-                int completedTasks = 0;
-                
-                for (Map<String, Object> measure : measuresList) {
-                    Object detailsObj = measure.get("details");
-                    if (detailsObj instanceof List) {
-                        List<Map<String, Object>> detailsList = (List<Map<String, Object>>) detailsObj;
-                        
-                        for (Map<String, Object> detail : detailsList) {
-                            totalTasks++;
-                            // 安全获取status字段
-                            Object statusObj = detail.get("status");
-                            String status = statusObj != null ? statusObj.toString() : "pending";
-                            
-                            if ("completed".equals(status)) {
-                                completedTasks++;
-                            } else if ("in_progress".equals(status)) {
-                                // 进行中的任务算完成一半
-                                completedTasks += 0.5;
-                            }
-                            
-                            log.trace("任务状态: {}, 累计完成任务: {}, 总任务数: {}", status, completedTasks, totalTasks);
-                        }
-                    }
-                }
-                
-                if (totalTasks > 0) {
-                    double rate = Math.round((completedTasks / totalTasks) * 100);
-                    log.debug("方案[{}]完成进度: {}% (完成任务: {}, 总任务数: {})", 
-                            scheme.getId(), rate, completedTasks, totalTasks);
-                    return rate;
-                } else {
-                    log.warn("方案[{}]没有找到任务数据", scheme.getId());
-                }
+            if (totalTasks > 0) {
+                double rate = Math.round((completedTasks / totalTasks) * 100);
+                log.debug("方案[{}]完成进度: {}% (完成任务: {}, 总任务数: {})", 
+                        scheme.getId(), rate, completedTasks, totalTasks);
+                return rate;
             } else {
-                log.warn("方案[{}]的measures_suggest格式不正确，不是List类型", scheme.getId());
+                log.warn("方案[{}]没有找到任务数据", scheme.getId());
             }
         } catch (Exception e) {
             log.error("计算方案[{}]完成进度失败", scheme.getId(), e);
