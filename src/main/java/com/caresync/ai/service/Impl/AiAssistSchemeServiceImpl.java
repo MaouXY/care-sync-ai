@@ -94,6 +94,10 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         if (schemeQueryDTO.getChildId() != null) {
             queryWrapper.eq(AiAssistScheme::getChildId, schemeQueryDTO.getChildId());
         }
+        // 按服务目标过滤
+        if (schemeQueryDTO.getTarget() != null) {
+            queryWrapper.eq(AiAssistScheme::getTarget, schemeQueryDTO.getTarget());
+        }
 
         // 按社工ID过滤
         if (schemeQueryDTO.getWorkerId() != null) {
