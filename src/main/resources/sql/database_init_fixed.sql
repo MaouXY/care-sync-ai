@@ -215,7 +215,7 @@ CREATE TABLE ai_assist_scheme (
                                   child_id BIGINT NOT NULL, -- 关联儿童ID
                                   worker_id BIGINT NOT NULL, -- 关联社工ID
                                   target VARCHAR(200) NOT NULL, -- 服务目标（如"缓解孤独感"）
-                                  measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 目标（最多3条）多余了
+                                  measures TEXT[] NOT NULL CHECK (array_length(measures, 1) <= 3), -- 服务tag（最多3条）
                                   cycle INT DEFAULT 7, -- 周期（默认1周）
                                   scheme_status VARCHAR(20) DEFAULT 'DRAFT' CHECK (scheme_status IN ('DRAFT', 'IN_PROGRESS', 'COMPLETED')), -- 方案状态
                                   ai_suggestions JSONB NOT NULL, -- AI建议（含目标、措施、依据）
