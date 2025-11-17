@@ -2,6 +2,7 @@ package com.caresync.ai.service.Impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.caresync.ai.model.DTO.SchemeLogQueryDTO;
+import com.caresync.ai.model.DTO.SchemeLogDTO;
 import com.caresync.ai.model.VO.AssistSchemeLogVO;
 import com.caresync.ai.model.entity.AssistTrackLog;
 import com.caresync.ai.model.entity.AiAssistScheme;
@@ -44,6 +45,23 @@ public class AssistTrackLogServiceImpl extends ServiceImpl<AssistTrackLogMapper,
     
     @Autowired
     private ObjectMapper objectMapper;
+
+    /**
+     * 获取服务方案日志（排除DRAFT状态）
+     */
+    @Override
+    public AssistSchemeLogVO getScheme(SchemeLogDTO queryDTO) {
+         // 执行查询
+        AiAssistScheme trackLog = aiAssistSchemeService.getById(queryDTO.getId());
+
+         if (trackLog == null) {
+             log.warn("未找到ID为 {} 的服务方案日志", queryDTO.getId());
+             return null;
+         }
+         // 转换为VO
+         List<AssistSchemeLogVO> vo = convertToSchemeVOList( List.of(trackLog));
+         return vo.get(0);
+    }
 
     /**
      * 获取服务方案列表（排除DRAFT状态）

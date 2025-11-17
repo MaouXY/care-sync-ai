@@ -81,10 +81,11 @@ public class ChildManageController {
      * @param createChildDTO 创建儿童账号DTO
      * @return 结果
      */
-    //@PostMapping
-    //@Operation(summary = "创建儿童账号", description = "创建新的儿童账号")
-    public Result createChild(@RequestBody CreateChildDTO createChildDTO) {
-        // 暂时返回成功，不实现具体业务逻辑
-        return Result.success();
+    @PostMapping
+    @Operation(summary = "创建儿童账号", description = "创建新的儿童账号")
+    public Result<Long> createChild(@RequestBody CreateChildDTO createChildDTO) {
+        // 调用service层方法创建儿童账号
+        Long childId = childService.createChild(createChildDTO);
+        return Result.success(childId);
     }
 }

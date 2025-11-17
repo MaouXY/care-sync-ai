@@ -2,6 +2,7 @@ package com.caresync.ai.service;
 
 import com.caresync.ai.model.DTO.ChildLoginDTO;
 import com.caresync.ai.model.DTO.ChildQueryDTO;
+import com.caresync.ai.model.DTO.CreateChildDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
@@ -59,4 +60,11 @@ public interface IChildService extends IService<Child> {
      * @return 分页结果
      */
     PageResult<ChildQueueVO> getChildList(ChildQueryDTO childQueryDTO);
+
+    /**
+     * 创建儿童账号
+     * @param createChildDTO 创建儿童账号DTO
+     * @return 创建的儿童ID
+     */
+    Long createChild(CreateChildDTO createChildDTO);
 }

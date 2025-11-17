@@ -1,6 +1,7 @@
 package com.caresync.ai.controller;
 
 import com.caresync.ai.model.DTO.AddTrackLogDTO;
+import com.caresync.ai.model.DTO.SchemeLogDTO;
 import com.caresync.ai.model.DTO.SchemeLogQueryDTO;
 import com.caresync.ai.model.DTO.UpdateTrackLogDTO;
 import com.caresync.ai.model.VO.*;
@@ -64,14 +65,7 @@ public class AssistTrackController {
             }
 
             // 2. 调用服务获取方案详情
-            DetailSchemeVO detailVO = aiAssistSchemeService.getSchemeDetail(id);
-            if (detailVO == null) {
-                log.warn("未找到ID为{}的服务方案", id);
-                return Result.error("未找到指定的服务方案");
-            }
-
-            // 3. 转换为AssistSchemeLogVO对象
-            AssistSchemeLogVO logVO = convertToSchemeLogVO(detailVO);
+            AssistSchemeLogVO logVO = assistTrackLogService.getScheme(new SchemeLogDTO(id));
 
             log.info("成功获取服务方案详情，方案ID: {}", id);
             return Result.success(logVO);

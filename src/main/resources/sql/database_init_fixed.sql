@@ -470,3 +470,8 @@ CREATE TABLE training_evaluation (
 );
 -- 索引：优化会话评估查询
 CREATE INDEX idx_evaluation_session ON training_evaluation(session_id);
+
+
+
+
+

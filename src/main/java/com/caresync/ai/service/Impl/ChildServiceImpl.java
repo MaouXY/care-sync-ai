@@ -10,6 +10,7 @@ import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.exception.BusinessException;
 import com.caresync.ai.model.DTO.ChildLoginDTO;
 import com.caresync.ai.model.DTO.ChildQueryDTO;
+import com.caresync.ai.model.DTO.CreateChildDTO;
 import com.caresync.ai.model.DTO.UpdateChildInfoDTO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
@@ -486,5 +487,42 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         queryWrapper.orderByDesc(Child::getCreateTime);
 
         return queryWrapper;
+    }
+
+    /**
+     * 创建儿童账号
+     * @param createChildDTO 创建儿童账号DTO
+     * @return 创建的儿童ID
+     */
+    @Override
+    public Long createChild(CreateChildDTO createChildDTO) {
+        // 检查儿童编号是否已存在
+        LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Child::getChildNo, createChildDTO.getChildNo());
+        Child existingChild = this.getOne(queryWrapper);
+        
+        if (existingChild != null) {
+            throw new BusinessException(CodeConstant.FAIL_CODE, "儿童编号已存在");
+        }
+
+        // 创建儿童对象
+        Child child = new Child();
+        BeanUtils.copyProperties(createChildDTO, child);
+        
+        // 设置验证码（加密存储）
+        child.setVerifyCode(PasswordEncoderUtil.encode(createChildDTO.getVerifyCode()));
+        
+        // 设置默认值
+        child.setServiceStatus("未指定服务社工");
+        child.setRiskLevel("低风险");
+        child.setHasNewChat(false);
+        
+        // 保存儿童信息
+        boolean result = this.save(child);
+        if (!result) {
+            throw new BusinessException(CodeConstant.FAIL_CODE, "创建儿童账号失败");
+        }
+        
+        return child.getId();
     }
 }
