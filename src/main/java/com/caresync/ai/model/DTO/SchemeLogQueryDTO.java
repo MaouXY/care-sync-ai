@@ -19,6 +19,8 @@ public class SchemeLogQueryDTO {
     private String target;
     @Schema(description = "方案名称/儿童名称（模糊查询）")
     private String name; // 方案名称/儿童名称（模糊查询）
+    @Schema(description = "方案状态")
+    private String schemeStatus; // 方案状态
     @Schema(description = "创建开始日期")
     private LocalDateTime startDate; // 创建开始日期
     @Schema(description = "创建结束日期")

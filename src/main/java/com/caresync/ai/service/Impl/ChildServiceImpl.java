@@ -40,6 +40,8 @@ import org.springframework.util.DigestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -197,13 +199,15 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
             // 提取emotion_trend
             Object emotionTrend = aiAnalysisMap.get("emotion_trend");
             if (emotionTrend instanceof List) {
-                aiStructInfo.setEmotionTrend((String[]) emotionTrend);
+                List<String> emotionTrendList = (List<String>) emotionTrend;
+                aiStructInfo.setEmotionTrend(emotionTrendList.toArray(new String[0]));
             }
 
             // 提取core_needs
             Object coreNeeds = aiAnalysisMap.get("core_needs");
             if (coreNeeds instanceof List) {
-                aiStructInfo.setCoreNeeds((String[]) coreNeeds);
+                List<String> coreNeedsList = (List<String>) coreNeeds;
+                aiStructInfo.setCoreNeeds(coreNeedsList.toArray(new String[0]));
             }
 
             // 提取potential_problems
@@ -221,7 +225,18 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
             // 提取latest_analysis
             Object latestAnalysis = aiAnalysisMap.get("latest_analysis");
             if (latestAnalysis instanceof String) {
-                aiStructInfo.setLatestAnalysis(LocalDateTime.parse((String) latestAnalysis));
+                // 尝试使用ISO-8601格式解析日期时间字符串
+                try {
+                    aiStructInfo.setLatestAnalysis(LocalDateTime.parse((String) latestAnalysis));
+                } catch (DateTimeParseException e) {
+                    // 如果ISO格式失败，尝试使用"yyyy-MM-dd HH:mm:ss"格式
+                    try {
+                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                        aiStructInfo.setLatestAnalysis(LocalDateTime.parse((String) latestAnalysis, formatter));
+                    } catch (DateTimeParseException e2) {
+                        log.warn("无法解析latest_analysis日期时间: {}", latestAnalysis);
+                    }
+                }
             }
 
             // 提取emotion_scores
@@ -230,18 +245,37 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                 Map<String, Object> scoresMap = (Map<String, Object>) emotionScores;
                 EmotionScores emotionScoresObj = new EmotionScores();
 
-                // 设置情绪分数
-                if (scoresMap.get("stability") instanceof Number) {//情绪稳定性
+                // 设置情绪分数 - 使用中文字段名
+                if (scoresMap.get("情绪稳定性") instanceof Number) {
+                    emotionScoresObj.setStability(((Number) scoresMap.get("情绪稳定性")).intValue());
+                } else if (scoresMap.get("stability") instanceof Number) {
                     emotionScoresObj.setStability(((Number) scoresMap.get("stability")).intValue());
+                } else if (scoresMap.get("情绪稳定性") == null || scoresMap.get("stability") == null) {
+                    emotionScoresObj.setStability(0); // 设置默认值
                 }
-                if (scoresMap.get("anxiety") instanceof Number) {//焦虑水平
+                
+                if (scoresMap.get("焦虑水平") instanceof Number) {
+                    emotionScoresObj.setAnxiety(((Number) scoresMap.get("焦虑水平")).intValue());
+                } else if (scoresMap.get("anxiety") instanceof Number) {
                     emotionScoresObj.setAnxiety(((Number) scoresMap.get("anxiety")).intValue());
+                } else if (scoresMap.get("焦虑水平") == null || scoresMap.get("anxiety") == null) {
+                    emotionScoresObj.setAnxiety(0); // 设置默认值
                 }
-                if (scoresMap.get("happiness") instanceof Number) {//幸福感
+                
+                if (scoresMap.get("幸福感") instanceof Number) {
+                    emotionScoresObj.setHappiness(((Number) scoresMap.get("幸福感")).intValue());
+                } else if (scoresMap.get("happiness") instanceof Number) {
                     emotionScoresObj.setHappiness(((Number) scoresMap.get("happiness")).intValue());
+                } else if (scoresMap.get("幸福感") == null || scoresMap.get("happiness") == null) {
+                    emotionScoresObj.setHappiness(0); // 设置默认值
                 }
-                if (scoresMap.get("socialConfidence") instanceof Number) {//社交自信
+                
+                if (scoresMap.get("社交自信") instanceof Number) {
+                    emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("社交自信")).intValue());
+                } else if (scoresMap.get("socialConfidence") instanceof Number) {
                     emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("socialConfidence")).intValue());
+                } else if (scoresMap.get("社交自信") == null || scoresMap.get("socialConfidence") == null) {
+                    emotionScoresObj.setSocialConfidence(0); // 设置默认值
                 }
 
                 aiStructInfo.setEmotionScores(emotionScoresObj);
@@ -255,19 +289,56 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
 
                 for (Map<String, Object> historyItem : historyList) {
                     EmotionScores emotionScoresObj = new EmotionScores();
-
-                    // 设置情绪分数
-                    if (historyItem.get("stability") instanceof Number) {//情绪稳定性
-                        emotionScoresObj.setStability(((Number) historyItem.get("stability")).intValue());
+                    
+                    // 检查historyItem是否包含scores字段
+                    Map<String, Object> scoresMap = null;
+                    if (historyItem.containsKey("scores") && historyItem.get("scores") instanceof Map) {
+                        scoresMap = (Map<String, Object>) historyItem.get("scores");
+                    } else if (historyItem.containsKey("情绪稳定性") || historyItem.containsKey("焦虑水平") || 
+                              historyItem.containsKey("幸福感") || historyItem.containsKey("社交自信")) {
+                        // 如果直接包含情绪分数字段，则使用historyItem本身
+                        scoresMap = historyItem;
                     }
-                    if (historyItem.get("anxiety") instanceof Number) {//焦虑水平
-                        emotionScoresObj.setAnxiety(((Number) historyItem.get("anxiety")).intValue());
-                    }
-                    if (historyItem.get("happiness") instanceof Number) {//幸福感
-                        emotionScoresObj.setHappiness(((Number) historyItem.get("happiness")).intValue());
-                    }
-                    if (historyItem.get("socialConfidence") instanceof Number) {//社交自信
-                        emotionScoresObj.setSocialConfidence(((Number) historyItem.get("socialConfidence")).intValue());
+                    
+                    if (scoresMap != null) {
+                        // 设置情绪分数 - 使用中文字段名
+                        if (scoresMap.get("情绪稳定性") instanceof Number) {
+                            emotionScoresObj.setStability(((Number) scoresMap.get("情绪稳定性")).intValue());
+                        } else if (scoresMap.get("stability") instanceof Number) {
+                            emotionScoresObj.setStability(((Number) scoresMap.get("stability")).intValue());
+                        } else if (scoresMap.get("情绪稳定性") == null || scoresMap.get("stability") == null) {
+                            emotionScoresObj.setStability(0); // 设置默认值
+                        }
+                        
+                        if (scoresMap.get("焦虑水平") instanceof Number) {
+                            emotionScoresObj.setAnxiety(((Number) scoresMap.get("焦虑水平")).intValue());
+                        } else if (scoresMap.get("anxiety") instanceof Number) {
+                            emotionScoresObj.setAnxiety(((Number) scoresMap.get("anxiety")).intValue());
+                        } else if (scoresMap.get("焦虑水平") == null || scoresMap.get("anxiety") == null) {
+                            emotionScoresObj.setAnxiety(0); // 设置默认值
+                        }
+                        
+                        if (scoresMap.get("幸福感") instanceof Number) {
+                            emotionScoresObj.setHappiness(((Number) scoresMap.get("幸福感")).intValue());
+                        } else if (scoresMap.get("happiness") instanceof Number) {
+                            emotionScoresObj.setHappiness(((Number) scoresMap.get("happiness")).intValue());
+                        } else if (scoresMap.get("幸福感") == null || scoresMap.get("happiness") == null) {
+                            emotionScoresObj.setHappiness(0); // 设置默认值
+                        }
+                        
+                        if (scoresMap.get("社交自信") instanceof Number) {
+                            emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("社交自信")).intValue());
+                        } else if (scoresMap.get("socialConfidence") instanceof Number) {
+                            emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("socialConfidence")).intValue());
+                        } else if (scoresMap.get("社交自信") == null || scoresMap.get("socialConfidence") == null) {
+                            emotionScoresObj.setSocialConfidence(0); // 设置默认值
+                        }
+                    } else {
+                        // 如果没有找到分数数据，设置默认值
+                        emotionScoresObj.setStability(0);
+                        emotionScoresObj.setAnxiety(0);
+                        emotionScoresObj.setHappiness(0);
+                        emotionScoresObj.setSocialConfidence(0);
                     }
 
                     emotionHistoryList.add(emotionScoresObj);
@@ -290,10 +361,14 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                         recommendationsObj.setTitle((String) recItem.get("title"));
                     }
                     if (recItem.get("description") instanceof String) {
-                        recommendationsObj.setPriority((String) recItem.get("priority"));
+                        recommendationsObj.setDescription((String) recItem.get("description"));
+                    } else if (recItem.get("description") == null) {
+                        recommendationsObj.setDescription(""); // 设置默认值
                     }
                     if (recItem.get("priority") instanceof String) {
                         recommendationsObj.setPriority((String) recItem.get("priority"));
+                    } else if (recItem.get("priority") == null) {
+                        recommendationsObj.setPriority("中"); // 设置默认值
                     }
 
                     recommendationsList.add(recommendationsObj);
@@ -305,7 +380,8 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
             // 提取key_findings
             Object keyFindings = aiAnalysisMap.get("key_findings");
             if (keyFindings instanceof List) {
-                aiStructInfo.setKeyFindings((String[]) keyFindings);
+                List<String> keyFindingsList = (List<String>) keyFindings;
+                aiStructInfo.setKeyFindings(keyFindingsList.toArray(new String[0]));
             }
 
             return aiStructInfo;

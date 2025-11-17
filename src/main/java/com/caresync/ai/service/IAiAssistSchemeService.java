@@ -4,6 +4,7 @@ import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
+import com.caresync.ai.model.VO.TaskStatisticsVO;
 import com.caresync.ai.model.entity.AiAssistScheme;
 import com.caresync.ai.result.PageResult;
 import com.baomidou.mybatisplus.extension.service.IService;
