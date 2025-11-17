@@ -18,12 +18,17 @@ import com.caresync.ai.model.VO.LoginVO;
 import com.caresync.ai.model.entity.Child;
 import com.caresync.ai.mapper.ChildMapper;
 import com.caresync.ai.model.entity.SocialWorker;
+import com.caresync.ai.model.json.AiStructInfo;
+import com.caresync.ai.model.json.EmotionScores;
+import com.caresync.ai.model.json.Recommendations;
 import com.caresync.ai.result.PageResult;
 import com.caresync.ai.service.IChildService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.service.ISocialWorkerService;
 import com.caresync.ai.utils.JwtUtil;
 import com.caresync.ai.utils.PasswordEncoderUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +37,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +63,9 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
     @Lazy
     @Autowired
     private ISocialWorkerService socialWorkerService;
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     /*####################儿童端####################*/
     /**
@@ -135,9 +147,173 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
             throw new BusinessException(CodeConstant.NOT_FOUND_CODE,"儿童不存在");
         }
 
-        ChildInfoVO childInfoVO = new ChildInfoVO();
-        BeanUtils.copyProperties(child, childInfoVO);
+        ChildInfoVO childInfoVO = ChildInfoVO.builder()
+                .id(child.getId())
+                .childNo(child.getChildNo())
+                .serviceStatus(child.getServiceStatus())
+                .riskLevel(child.getRiskLevel())
+                .name(child.getName())
+                .age(child.getAge())
+                .gender(child.getGender())
+                .birthDate(child.getBirthDate().atStartOfDay())
+                .idCard(child.getIdCard())
+                .address(child.getAddress())
+                .notes(child.getNotes())
+                .phone(child.getPhone())
+                .guardianName(child.getGuardianName())
+                .guardianPhone(child.getGuardianPhone())
+                .hasNewChat(child.getHasNewChat())
+                .aiStructInfo(parseAiAnalysisToAiStructInfo(child.getAiStructInfo()))
+                .aiAnalysisTime(child.getAiAnalysisTime())
+                .createTime(child.getCreateTime())
+                .updateTime(child.getUpdateTime())
+                .build();
         return childInfoVO;
+    }
+
+    /**
+     * 将AI分析结果解析为AiStructInfo对象
+     */
+    private AiStructInfo parseAiAnalysisToAiStructInfo(Object aiAnalysisObj) {
+        try {
+            if (aiAnalysisObj == null) {
+                return null;
+            }
+
+            String aiAnalysis;
+            if (aiAnalysisObj instanceof String) {
+                aiAnalysis = (String) aiAnalysisObj;
+            } else {
+                // 如果不是String类型，转换为JSON字符串
+                aiAnalysis = objectMapper.writeValueAsString(aiAnalysisObj);
+            }
+
+            // 解析JSON到Map
+            Map<String, Object> aiAnalysisMap = objectMapper.readValue(aiAnalysis, new TypeReference<Map<String, Object>>() {});
+
+            // 创建AiStructInfo对象
+            AiStructInfo aiStructInfo = new AiStructInfo();
+
+            // 提取emotion_trend
+            Object emotionTrend = aiAnalysisMap.get("emotion_trend");
+            if (emotionTrend instanceof List) {
+                aiStructInfo.setEmotionTrend((String[]) emotionTrend);
+            }
+
+            // 提取core_needs
+            Object coreNeeds = aiAnalysisMap.get("core_needs");
+            if (coreNeeds instanceof List) {
+                aiStructInfo.setCoreNeeds((String[]) coreNeeds);
+            }
+
+            // 提取potential_problems
+            Object potentialProblems = aiAnalysisMap.get("potential_problems");
+            if (potentialProblems instanceof String) {
+                aiStructInfo.setPotentialProblems((String) potentialProblems);
+            }
+
+            // 提取description
+            Object description = aiAnalysisMap.get("description");
+            if (description instanceof String) {
+                aiStructInfo.setDescription((String) description);
+            }
+
+            // 提取latest_analysis
+            Object latestAnalysis = aiAnalysisMap.get("latest_analysis");
+            if (latestAnalysis instanceof String) {
+                aiStructInfo.setLatestAnalysis(LocalDateTime.parse((String) latestAnalysis));
+            }
+
+            // 提取emotion_scores
+            Object emotionScores = aiAnalysisMap.get("emotion_scores");
+            if (emotionScores instanceof Map) {
+                Map<String, Object> scoresMap = (Map<String, Object>) emotionScores;
+                EmotionScores emotionScoresObj = new EmotionScores();
+
+                // 设置情绪分数
+                if (scoresMap.get("stability") instanceof Number) {//情绪稳定性
+                    emotionScoresObj.setStability(((Number) scoresMap.get("stability")).intValue());
+                }
+                if (scoresMap.get("anxiety") instanceof Number) {//焦虑水平
+                    emotionScoresObj.setAnxiety(((Number) scoresMap.get("anxiety")).intValue());
+                }
+                if (scoresMap.get("happiness") instanceof Number) {//幸福感
+                    emotionScoresObj.setHappiness(((Number) scoresMap.get("happiness")).intValue());
+                }
+                if (scoresMap.get("socialConfidence") instanceof Number) {//社交自信
+                    emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("socialConfidence")).intValue());
+                }
+
+                aiStructInfo.setEmotionScores(emotionScoresObj);
+            }
+
+            // 提取emotion_history
+            Object emotionHistory = aiAnalysisMap.get("emotion_history");
+            if (emotionHistory instanceof List) {
+                List<Map<String, Object>> historyList = (List<Map<String, Object>>) emotionHistory;
+                List<EmotionScores> emotionHistoryList = new ArrayList<>();
+
+                for (Map<String, Object> historyItem : historyList) {
+                    EmotionScores emotionScoresObj = new EmotionScores();
+
+                    // 设置情绪分数
+                    if (historyItem.get("stability") instanceof Number) {//情绪稳定性
+                        emotionScoresObj.setStability(((Number) historyItem.get("stability")).intValue());
+                    }
+                    if (historyItem.get("anxiety") instanceof Number) {//焦虑水平
+                        emotionScoresObj.setAnxiety(((Number) historyItem.get("anxiety")).intValue());
+                    }
+                    if (historyItem.get("happiness") instanceof Number) {//幸福感
+                        emotionScoresObj.setHappiness(((Number) historyItem.get("happiness")).intValue());
+                    }
+                    if (historyItem.get("socialConfidence") instanceof Number) {//社交自信
+                        emotionScoresObj.setSocialConfidence(((Number) historyItem.get("socialConfidence")).intValue());
+                    }
+
+                    emotionHistoryList.add(emotionScoresObj);
+                }
+
+                aiStructInfo.setEmotionHistory(emotionHistoryList.toArray(new EmotionScores[0]));
+            }
+
+            // 提取recommendations
+            Object recommendations = aiAnalysisMap.get("recommendations");
+            if (recommendations instanceof List) {
+                List<Map<String, Object>> recList = (List<Map<String, Object>>) recommendations;
+                List<Recommendations> recommendationsList = new ArrayList<>();
+
+                for (Map<String, Object> recItem : recList) {
+                    Recommendations recommendationsObj = new Recommendations();
+
+                    // 设置建议内容
+                    if (recItem.get("title") instanceof String) {
+                        recommendationsObj.setTitle((String) recItem.get("title"));
+                    }
+                    if (recItem.get("description") instanceof String) {
+                        recommendationsObj.setPriority((String) recItem.get("priority"));
+                    }
+                    if (recItem.get("priority") instanceof String) {
+                        recommendationsObj.setPriority((String) recItem.get("priority"));
+                    }
+
+                    recommendationsList.add(recommendationsObj);
+                }
+
+                aiStructInfo.setRecommendations(recommendationsList.toArray(new Recommendations[0]));
+            }
+
+            // 提取key_findings
+            Object keyFindings = aiAnalysisMap.get("key_findings");
+            if (keyFindings instanceof List) {
+                aiStructInfo.setKeyFindings((String[]) keyFindings);
+            }
+
+            return aiStructInfo;
+
+        } catch (Exception e) {
+            log.error("解析AI分析结果到AiStructInfo失败", e);
+            return null;
+        }
     }
 
     /**
