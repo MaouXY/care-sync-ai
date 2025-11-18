@@ -254,7 +254,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                 } else if (scoresMap.get("情绪稳定性") == null || scoresMap.get("stability") == null) {
                     emotionScoresObj.setStability(0); // 设置默认值
                 }
-                
+
                 if (scoresMap.get("焦虑水平") instanceof Number) {
                     emotionScoresObj.setAnxiety(((Number) scoresMap.get("焦虑水平")).intValue());
                 } else if (scoresMap.get("anxiety") instanceof Number) {
@@ -262,7 +262,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                 } else if (scoresMap.get("焦虑水平") == null || scoresMap.get("anxiety") == null) {
                     emotionScoresObj.setAnxiety(0); // 设置默认值
                 }
-                
+
                 if (scoresMap.get("幸福感") instanceof Number) {
                     emotionScoresObj.setHappiness(((Number) scoresMap.get("幸福感")).intValue());
                 } else if (scoresMap.get("happiness") instanceof Number) {
@@ -270,7 +270,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                 } else if (scoresMap.get("幸福感") == null || scoresMap.get("happiness") == null) {
                     emotionScoresObj.setHappiness(0); // 设置默认值
                 }
-                
+
                 if (scoresMap.get("社交自信") instanceof Number) {
                     emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("社交自信")).intValue());
                 } else if (scoresMap.get("socialConfidence") instanceof Number) {
@@ -290,17 +290,17 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
 
                 for (Map<String, Object> historyItem : historyList) {
                     EmotionScores emotionScoresObj = new EmotionScores();
-                    
+
                     // 检查historyItem是否包含scores字段
                     Map<String, Object> scoresMap = null;
                     if (historyItem.containsKey("scores") && historyItem.get("scores") instanceof Map) {
                         scoresMap = (Map<String, Object>) historyItem.get("scores");
-                    } else if (historyItem.containsKey("情绪稳定性") || historyItem.containsKey("焦虑水平") || 
-                              historyItem.containsKey("幸福感") || historyItem.containsKey("社交自信")) {
+                    } else if (historyItem.containsKey("情绪稳定性") || historyItem.containsKey("焦虑水平") ||
+                            historyItem.containsKey("幸福感") || historyItem.containsKey("社交自信")) {
                         // 如果直接包含情绪分数字段，则使用historyItem本身
                         scoresMap = historyItem;
                     }
-                    
+
                     if (scoresMap != null) {
                         // 设置情绪分数 - 使用中文字段名
                         if (scoresMap.get("情绪稳定性") instanceof Number) {
@@ -310,7 +310,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                         } else if (scoresMap.get("情绪稳定性") == null || scoresMap.get("stability") == null) {
                             emotionScoresObj.setStability(0); // 设置默认值
                         }
-                        
+
                         if (scoresMap.get("焦虑水平") instanceof Number) {
                             emotionScoresObj.setAnxiety(((Number) scoresMap.get("焦虑水平")).intValue());
                         } else if (scoresMap.get("anxiety") instanceof Number) {
@@ -318,7 +318,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                         } else if (scoresMap.get("焦虑水平") == null || scoresMap.get("anxiety") == null) {
                             emotionScoresObj.setAnxiety(0); // 设置默认值
                         }
-                        
+
                         if (scoresMap.get("幸福感") instanceof Number) {
                             emotionScoresObj.setHappiness(((Number) scoresMap.get("幸福感")).intValue());
                         } else if (scoresMap.get("happiness") instanceof Number) {
@@ -326,7 +326,7 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
                         } else if (scoresMap.get("幸福感") == null || scoresMap.get("happiness") == null) {
                             emotionScoresObj.setHappiness(0); // 设置默认值
                         }
-                        
+
                         if (scoresMap.get("社交自信") instanceof Number) {
                             emotionScoresObj.setSocialConfidence(((Number) scoresMap.get("社交自信")).intValue());
                         } else if (scoresMap.get("socialConfidence") instanceof Number) {
@@ -419,6 +419,43 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
 
     /*####################社工端####################*/
     /**
+     * 创建儿童账号
+     * @param createChildDTO 创建儿童账号DTO
+     * @return 创建的儿童ID
+     */
+    @Override
+    public Long createChild(CreateChildDTO createChildDTO) {
+        // 检查儿童编号是否已存在
+        LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Child::getChildNo, createChildDTO.getChildNo());
+        Child existingChild = this.getOne(queryWrapper);
+
+        if (existingChild != null) {
+            throw new BusinessException(CodeConstant.FAIL_CODE, "儿童编号已存在");
+        }
+
+        // 创建儿童对象
+        Child child = new Child();
+        BeanUtils.copyProperties(createChildDTO, child);
+
+        // 设置验证码（加密存储）
+        child.setVerifyCode(PasswordEncoderUtil.encode(createChildDTO.getVerifyCode()));
+
+        // 设置默认值
+        child.setServiceStatus("未指定服务社工");
+        child.setRiskLevel("低风险");
+        child.setHasNewChat(false);
+
+        // 保存儿童信息
+        boolean result = this.save(child);
+        if (!result) {
+            throw new BusinessException(CodeConstant.FAIL_CODE, "创建儿童账号失败");
+        }
+
+        return child.getId();
+    }
+
+    /**
      * 获取儿童列表
      * @param childQueryDTO 儿童查询参数
      * @return 分页结果
@@ -487,42 +524,5 @@ public class ChildServiceImpl extends ServiceImpl<ChildMapper, Child> implements
         queryWrapper.orderByDesc(Child::getCreateTime);
 
         return queryWrapper;
-    }
-
-    /**
-     * 创建儿童账号
-     * @param createChildDTO 创建儿童账号DTO
-     * @return 创建的儿童ID
-     */
-    @Override
-    public Long createChild(CreateChildDTO createChildDTO) {
-        // 检查儿童编号是否已存在
-        LambdaQueryWrapper<Child> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Child::getChildNo, createChildDTO.getChildNo());
-        Child existingChild = this.getOne(queryWrapper);
-        
-        if (existingChild != null) {
-            throw new BusinessException(CodeConstant.FAIL_CODE, "儿童编号已存在");
-        }
-
-        // 创建儿童对象
-        Child child = new Child();
-        BeanUtils.copyProperties(createChildDTO, child);
-        
-        // 设置验证码（加密存储）
-        child.setVerifyCode(PasswordEncoderUtil.encode(createChildDTO.getVerifyCode()));
-        
-        // 设置默认值
-        child.setServiceStatus("未指定服务社工");
-        child.setRiskLevel("低风险");
-        child.setHasNewChat(false);
-        
-        // 保存儿童信息
-        boolean result = this.save(child);
-        if (!result) {
-            throw new BusinessException(CodeConstant.FAIL_CODE, "创建儿童账号失败");
-        }
-        
-        return child.getId();
     }
 }
