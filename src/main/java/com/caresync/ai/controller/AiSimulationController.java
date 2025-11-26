@@ -16,6 +16,7 @@ import com.caresync.ai.service.ISimulationScenarioService;
 import com.caresync.ai.service.ITrainingChatRecordService;
 import com.caresync.ai.service.ITrainingEvaluationService;
 import com.caresync.ai.service.ITrainingSessionService;
+import com.caresync.ai.service.Impl.AsyncScoreService;
 import com.caresync.ai.utils.ArkUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.volcengine.ark.runtime.model.bot.completion.chat.BotChatCompletionRequest;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
 
 import com.caresync.ai.utils.JsonUtil;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * AI模拟训练模块控制器
@@ -67,6 +70,9 @@ public class AiSimulationController {
 
     @Autowired
     private ITrainingEvaluationService trainingEvaluationService;
+    
+    @Autowired
+    private AsyncScoreService asyncScoreService;
 
     /**
      * 获取模拟训练场景列表
@@ -195,8 +201,7 @@ public class AiSimulationController {
             trainingChatRecordService.save(workerMessage);
             logger.info("保存社工消息成功，记录ID: {}", workerMessage.getId());
 
-            // 4. 调用大模型进行三次交互
-
+            // 4. 调用大模型进行三次交互  TODO 考虑并发问题
             // 4.1 第一次调用：模拟儿童回复
             String childReply = getChildReply(sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
             logger.info("模拟儿童回复: {}", childReply);
@@ -454,21 +459,39 @@ public class AiSimulationController {
             }
 
 
-            // 发起5轮AI请求获取评分和评价
+            // 发起5轮AI请求获取评分和评价（使用@Async异步执行）
             // 1. 共情能力评分
-            BigDecimal empathyScore = getScoreFromAi("请为这段对话中的社工的共情能力进行评分，满分100分，只需要返回数字。", historyMessages);
+            CompletableFuture<BigDecimal> empathyScoreFuture = asyncScoreService.getScoreFromAiAsync(
+                "请为这段对话中的社工的共情能力进行评分，满分100分，只需要返回数字。", historyMessages);
 
             // 2. 沟通技巧评分
-            BigDecimal communicationScore = getScoreFromAi("请为这段对话中的社工的沟通技巧进行评分，满分100分，只需要返回数字。", historyMessages);
+            CompletableFuture<BigDecimal> communicationScoreFuture = asyncScoreService.getScoreFromAiAsync(
+                "请为这段对话中的社工的沟通技巧进行评分，满分100分，只需要返回数字。", historyMessages);
 
             // 3. 问题解决能力评分
-            BigDecimal problemSolvingScore = getScoreFromAi("请为这段对话中的社工的问题解决能力进行评分，满分100分，只需要返回数字。", historyMessages);
+            CompletableFuture<BigDecimal> problemSolvingScoreFuture = asyncScoreService.getScoreFromAiAsync(
+                "请为这段对话中的社工的问题解决能力进行评分，满分100分，只需要返回数字。", historyMessages);
 
             // 4. 情感识别能力评分
-            BigDecimal emotionalRecognitionScore = getScoreFromAi("请为这段对话中的社工的情感识别能力进行评分，满分100分，只需要返回数字。", historyMessages);
+            CompletableFuture<BigDecimal> emotionalRecognitionScoreFuture = asyncScoreService.getScoreFromAiAsync(
+                "请为这段对话中的社工的情感识别能力进行评分，满分100分，只需要返回数字。", historyMessages);
 
             // 5. 综合评价
-            ChatContent comprehensiveCommentContent = getComprehensiveCommentFromAi("请为这段对话中的社工表现给出综合评价，概述有点和不足和改进方向,要求简短回复。", historyMessages);
+            CompletableFuture<ChatContent> comprehensiveCommentFuture = asyncScoreService.getComprehensiveCommentFromAiAsync(
+                "请为这段对话中的社工表现给出综合评价，概述有点和不足和改进方向,要求简短回复。", historyMessages);
+
+            // 等待所有异步任务完成并获取结果
+            BigDecimal empathyScore = empathyScoreFuture.join();
+            BigDecimal communicationScore = communicationScoreFuture.join();
+            BigDecimal problemSolvingScore = problemSolvingScoreFuture.join();
+            BigDecimal emotionalRecognitionScore = emotionalRecognitionScoreFuture.join();
+            ChatContent comprehensiveCommentContent = comprehensiveCommentFuture.join();
+
+//            BigDecimal empathyScore = getScoreFromAi("请为这段对话中的社工的共情能力进行评分，满分100分，只需要返回数字。", historyMessages);
+//            BigDecimal communicationScore = getScoreFromAi("请为这段对话中的社工的沟通技巧进行评分，满分100分，只需要返回数字。", historyMessages);
+//            BigDecimal problemSolvingScore = getScoreFromAi("请为这段对话中的社工的问题解决能力进行评分，满分100分，只需要返回数字。", historyMessages);
+//            BigDecimal emotionalRecognitionScore = getScoreFromAi("请为这段对话中的社工的情感识别能力进行评分，满分100分，只需要返回数字。", historyMessages);
+//            ChatContent comprehensiveCommentContent = getComprehensiveCommentFromAi("请为这段对话中的社工表现给出综合评价，概述有点和不足和改进方向,要求简短回复。", historyMessages);
 
             // 创建并保存训练评估记录
             TrainingEvaluation evaluation = new TrainingEvaluation();
@@ -515,6 +538,7 @@ public class AiSimulationController {
         }
     }
 
+    /*   封装ai请求   */
     /**
      * 从AI获取评分
      */
