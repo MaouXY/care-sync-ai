@@ -77,6 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         }
+        // 如果没有token，继续执行过滤器链，由Spring Security的权限配置决定是否允许访问
 
         // 继续执行过滤器链
         filterChain.doFilter(request, response);

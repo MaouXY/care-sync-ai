@@ -201,28 +201,22 @@ public class AiSimulationController {
             trainingChatRecordService.save(workerMessage);
             logger.info("保存社工消息成功，记录ID: {}", workerMessage.getId());
 
-            // 4. 调用大模型进行三次交互  TODO 考虑并发问题
-            // 4.1 第一次调用：模拟儿童回复
-            String childReply = getChildReply(sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
+            // 4. 调用大模型进行合并请求，一次性获取三个结果
+            Map<String, String> aiResults = getCombinedAiResponse(sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
+            
+            String childReply = aiResults.get("childReply");
+            String emotionAnalysisJson = aiResults.get("emotionAnalysis");
+            String aiGuidance = aiResults.get("aiGuidance");
+            
             logger.info("模拟儿童回复: {}", childReply);
-
-            // 4.2 第二次调用：生成情感分析
-            String emotionAnalysisJson = getEmotionAnalysis(childReply, sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
             logger.info("情感分析结果: {}", emotionAnalysisJson);
+            logger.info("AI指导意见: {}", aiGuidance);
 
             // 检查emotionAnalysisJson是否为null或空
-            logger.info("emotionAnalysisJson是否为null: {}", emotionAnalysisJson == null);
-            if (emotionAnalysisJson != null) {
-                logger.info("emotionAnalysisJson长度: {}", emotionAnalysisJson.length());
-            } else {
-                // 如果emotionAnalysisJson为null，使用空JSON字符串
+            if (emotionAnalysisJson == null || emotionAnalysisJson.trim().isEmpty()) {
                 emotionAnalysisJson = "{}";
                 logger.info("使用空JSON字符串作为情感分析结果");
             }
-
-            // 4.3 第三次调用：生成指导意见
-            String aiGuidance = getAiGuidance(childReply,emotionAnalysisJson,sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory());
-            logger.info("AI指导意见: {}", aiGuidance);
 
             // 5. 保存AI回复的消息（儿童模拟回复）
             try {
@@ -232,7 +226,6 @@ public class AiSimulationController {
                         .contentType("TEXT")
                         .content(childReply)
                         .aiReply(true)
-                        //.emotionAnalysis((Map<String, Object>) emotionAnalysisObj)
                         .emotionAnalysis(emotionAnalysisJson)
                         .aiGuidance(aiGuidance != null ? aiGuidance : "")
                         .build();
@@ -266,6 +259,128 @@ public class AiSimulationController {
             logger.error("发送训练消息异常: {}", e.getMessage());
             return Result.error("发送消息失败，请重试");
         }
+    }
+
+    /**
+     * 合并AI请求，一次性获取儿童回复、情感分析和指导意见
+     */
+    private Map<String, String> getCombinedAiResponse(String workerMessage, List<ChatMessage> history) {
+        Map<String, String> results = new HashMap<>();
+        
+        try {
+            // 设置合并的系统提示词，要求模型一次性输出三个部分
+            String systemPrompt = "你是一个专业的儿童心理辅导AI助手，需要同时完成三个任务：\n" +
+                    "1. 模拟留守儿童的角色进行回复（用儿童的语气，简单、直接、真实）\n" +
+                    "2. 对儿童回复进行情感分析（输出JSON格式）\n" +
+                    "3. 为社工提供专业指导意见\n" +
+                    "\n" +
+                    "请按照以下格式输出结果：\n" +
+                    "---儿童回复---\n" +
+                    "[这里放置模拟儿童的回复内容]\n" +
+                    "---情感分析---\n" +
+                    "{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}\n" +
+                    "---指导意见---\n" +
+                    "[这里放置对社工的专业指导意见]\n" +
+                    "\n" +
+                    "注意：情感分析部分必须是严格的JSON格式，情绪名称可以是：开心、伤心、孤独、焦虑、生气、害怕、平静等。置信度和情绪强度范围是0-100的整数。";
+            
+            // 添加当前用户消息到历史记录
+            ChatMessage userMessage = ChatMessage.builder()
+                    .role("user")
+                    .content(workerMessage)
+                    .build();
+            history.add(userMessage);
+
+            // 构建聊天请求
+            ChatRequest chatRequest = ChatRequest.builder()
+                    .prompt("请根据社工的对话内容，一次性完成三个任务：模拟儿童回复、情感分析和提供指导意见。")
+                    .history(history)
+                    .build();
+
+            // 调用ArkUtil获取合并的AI响应
+            ChatContent chatContent = arkUtil.botChat(chatRequest, systemPrompt);
+            String combinedResponse = chatContent.getContent();
+            
+            logger.info("合并AI响应原始内容: {}", combinedResponse);
+            
+            // 解析合并的响应，提取三个部分
+            String childReply = extractSection(combinedResponse, "---儿童回复---", "---情感分析---");
+            String emotionAnalysis = extractSection(combinedResponse, "---情感分析---", "---指导意见---");
+            String aiGuidance = extractSection(combinedResponse, "---指导意见---", null);
+            
+            // 设置默认值，防止空指针
+            if (childReply == null || childReply.trim().isEmpty()) {
+                childReply = "我知道了...";
+            }
+            
+            if (emotionAnalysis == null || emotionAnalysis.trim().isEmpty()) {
+                emotionAnalysis = "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}";
+            }
+            
+            if (aiGuidance == null || aiGuidance.trim().isEmpty()) {
+                aiGuidance = "建议社工继续保持耐心倾听，给予儿童更多的情感支持和鼓励。";
+            }
+            
+            // 验证情感分析是否为有效的JSON格式
+            try {
+                objectMapper.readTree(emotionAnalysis);
+            } catch (Exception e) {
+                logger.warn("情感分析结果不是有效的JSON格式，使用默认值: {}", emotionAnalysis);
+                emotionAnalysis = "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}";
+            }
+            
+            results.put("childReply", childReply.trim());
+            results.put("emotionAnalysis", emotionAnalysis.trim());
+            results.put("aiGuidance", aiGuidance.trim());
+            
+            logger.info("解析后的结果 - 儿童回复: {}, 情感分析: {}, 指导意见: {}", 
+                    childReply.length(), emotionAnalysis.length(), aiGuidance.length());
+            
+        } catch (Exception e) {
+            logger.error("获取合并AI响应异常: {}", e.getMessage());
+            // 返回默认值
+            results.put("childReply", "我知道了...");
+            results.put("emotionAnalysis", "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}");
+            results.put("aiGuidance", "建议社工继续保持耐心倾听，给予儿童更多的情感支持和鼓励。");
+        }
+        
+        return results;
+    }
+    
+    /**
+     * 从合并响应中提取指定部分的内容
+     */
+    private String extractSection(String content, String startMarker, String endMarker) {
+        if (content == null) {
+            return null;
+        }
+        
+        int startIndex = content.indexOf(startMarker);
+        if (startIndex == -1) {
+            return null;
+        }
+        
+        startIndex += startMarker.length();
+        
+        int endIndex;
+        if (endMarker != null) {
+            endIndex = content.indexOf(endMarker, startIndex);
+            if (endIndex == -1) {
+                // 如果没有找到结束标记，尝试使用换行符作为分隔
+                endIndex = content.indexOf("\n---", startIndex);
+                if (endIndex == -1) {
+                    endIndex = content.length();
+                }
+            }
+        } else {
+            endIndex = content.length();
+        }
+        
+        if (endIndex == -1) {
+            endIndex = content.length();
+        }
+        
+        return content.substring(startIndex, endIndex).trim();
     }
 
     /**
