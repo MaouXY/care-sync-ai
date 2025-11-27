@@ -109,16 +109,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 "/common/upload",
                 "/api/judge0/webhook/callback",
                 "/doc.html", 
-                "/swagger-ui/", 
-                "/v3/api-docs/", 
-                "/webjars/", 
-                "/swagger-resources/",
-                "/static/", 
-                "/resources/"
+                "/swagger-ui", 
+                "/v3/api-docs", 
+                "/webjars", 
+                "/swagger-resources",
+                "/static", 
+                "/resources"
         };
         
         for (String path : publicPaths) {
-            if (requestURI.startsWith(path)) {
+            // 精确匹配或路径前缀匹配（移除结尾的斜杠）
+            if (requestURI.equals(path) || requestURI.startsWith(path + "/")) {
                 return false;
             }
         }
