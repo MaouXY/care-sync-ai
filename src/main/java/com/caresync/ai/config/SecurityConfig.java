@@ -83,25 +83,25 @@ public class SecurityConfig {
     // TODO 后续根据需求添加角色权限
     /*
     // 需要管理员权限
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public Result<?> adminMethod() {
         // 管理员专属逻辑
     }
 
     // 需要社工权限
-    @PreAuthorize("hasRole('SOCIAL_WORKER')")
+    @PreAuthorize("hasRole('ROLE_SOCIAL_WORKER')")
     public Result<?> socialWorkerMethod() {
         // 社工专属逻辑
     }
 
     // 需要儿童权限
-    @PreAuthorize("hasRole('CHILD')")
+    @PreAuthorize("hasRole('ROLE_CHILD')")
     public Result<?> childMethod() {
         // 儿童专属逻辑
     }
 
     // 多角色支持
-    @PreAuthorize("hasAnyRole('ADMIN', 'SOCIAL_WORKER')")
+    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_SOCIAL_WORKER')")
     @GetMapping("/admin-social-worker/data")
     public ResponseEntity<?> getDataForAdminAndSocialWorker() {
         // 管理员和社工都可访问的逻辑

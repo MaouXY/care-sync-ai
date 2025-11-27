@@ -27,7 +27,7 @@ public class SocialWorkerController {
     /**
      * 社工首页
      */
-    @PreAuthorize("hasRole(UserRole.SOCIAL_WORKER)")
+    @PreAuthorize("hasRole('ROLE_SOCIAL_WORKER')")
     @GetMapping("/home")
     @Operation(summary = "社工首页", description = "返回社工首页信息")
     public Result<SocialWorkerHomeVO> getSocialWorkerHome() {
