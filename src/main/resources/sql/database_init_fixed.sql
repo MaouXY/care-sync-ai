@@ -471,7 +471,76 @@ CREATE TABLE training_evaluation (
 -- 索引：优化会话评估查询
 CREATE INDEX idx_evaluation_session ON training_evaluation(session_id);
 
+-- 13. 创建角色表（role）
+CREATE TABLE role (
+                        id BIGSERIAL PRIMARY KEY, -- 角色ID
+                        role_code VARCHAR(50) NOT NULL UNIQUE, -- 角色代码
+                        role_name VARCHAR(50) NOT NULL, -- 角色名称
+                        description TEXT, -- 角色描述
+                        create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+-- 索引：优化角色查询
+CREATE INDEX idx_role_code ON role(role_code);
 
+-- 插入基础角色数据
+INSERT INTO role (role_code, role_name, description) VALUES 
+('ADMIN', '管理员', '系统管理员，拥有所有权限'),
+('SOCIAL_WORKER', '社工', '社会工作者，负责管理和服务儿童'),
+('CHILD', '儿童', '系统服务的儿童用户');
 
+-- 14. 创建用户角色关联表（user_role）
+CREATE TABLE user_role (
+                             id BIGSERIAL PRIMARY KEY, -- 关联ID
+                             user_id BIGINT NOT NULL, -- 用户ID（可以是social_worker.id或child.id）
+                             user_type VARCHAR(20) NOT NULL, -- 用户类型：SOCIAL_WORKER或CHILD
+                             role_id BIGINT NOT NULL, -- 角色ID
+                             create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- 外键关联
+                             FOREIGN KEY (role_id) REFERENCES role(id) ON DELETE CASCADE,
+    -- 确保同一用户只能有一个角色
+                             UNIQUE(user_id, user_type)
+);
+-- 索引：优化用户角色查询
+CREATE INDEX idx_user_role_user ON user_role(user_id, user_type);
+CREATE INDEX idx_user_role_type ON user_role(user_type);
 
+-- 为现有社工添加默认角色
+INSERT INTO user_role (user_id, user_type, role_id) 
+SELECT id, 'SOCIAL_WORKER', (SELECT id FROM role WHERE role_code = 'SOCIAL_WORKER')
+FROM social_worker;
 
+-- 15. 创建系统配置表（system_config）
+CREATE TABLE system_config (
+    id BIGSERIAL PRIMARY KEY, -- 配置ID
+    config_key VARCHAR(100) NOT NULL UNIQUE, -- 配置键（唯一）
+    config_value TEXT NOT NULL, -- 配置值
+    config_type VARCHAR(20) NOT NULL DEFAULT 'STRING', -- 配置类型：STRING、NUMBER、BOOLEAN、JSON
+    description TEXT, -- 配置描述
+    is_editable BOOLEAN DEFAULT TRUE, -- 是否可编辑
+    created_by BIGINT, -- 创建者ID（关联社工表）
+    updated_by BIGINT, -- 最后更新者ID（关联社工表）
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- 外键关联
+    FOREIGN KEY (created_by) REFERENCES social_worker(id) ON DELETE SET NULL,
+    FOREIGN KEY (updated_by) REFERENCES social_worker(id) ON DELETE SET NULL
+);
+
+-- 索引：优化配置键查询
+CREATE INDEX idx_system_config_key ON system_config(config_key);
+CREATE INDEX idx_system_config_type ON system_config(config_type);
+
+-- 插入基础系统配置数据
+INSERT INTO system_config (config_key, config_value, config_type, description, is_editable) VALUES 
+('ai_analysis_interval', '7', 'NUMBER', 'AI分析间隔天数（默认7天）', TRUE),
+('max_chat_sessions_per_child', '5', 'NUMBER', '每个儿童最大聊天会话数', TRUE),
+('auto_analysis_enabled', 'true', 'BOOLEAN', '是否启用自动AI分析', TRUE),
+('emergency_contact_phone', '13800138000', 'STRING', '紧急联系电话', TRUE),
+('default_risk_level', '中风险', 'STRING', '默认风险等级', TRUE),
+('max_scheme_duration', '30', 'NUMBER', '最大服务方案周期（天）', TRUE),
+('system_maintenance_mode', 'false', 'BOOLEAN', '系统维护模式开关', TRUE),
+('chat_content_filter_level', 'medium', 'STRING', '聊天内容过滤级别', TRUE),
+('training_session_timeout', '30', 'NUMBER', '训练会话超时时间（分钟）', TRUE),
+('notification_settings', '{"email": true, "sms": false, "push": true}', 'JSON', '通知设置', TRUE);

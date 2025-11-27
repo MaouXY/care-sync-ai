@@ -1,5 +1,6 @@
 package com.caresync.ai.controller;
 
+import com.caresync.ai.constant.UserRole;
 import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.model.DTO.*;
 import com.caresync.ai.model.VO.*;
@@ -9,6 +10,7 @@ import com.caresync.ai.service.ISocialWorkerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -25,6 +27,7 @@ public class SocialWorkerController {
     /**
      * 社工首页
      */
+    @PreAuthorize("hasRole(UserRole.SOCIAL_WORKER)")
     @GetMapping("/home")
     @Operation(summary = "社工首页", description = "返回社工首页信息")
     public Result<SocialWorkerHomeVO> getSocialWorkerHome() {

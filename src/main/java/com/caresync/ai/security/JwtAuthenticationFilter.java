@@ -70,17 +70,61 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             } catch (JwtException e) {
                 log.error("JWT令牌验证失败: {}", e.getMessage());
-                // 设置响应状态码和错误信息
-                response.setStatus(401);
+                // 设置响应状态码和错误信息 - 返回401 Unauthorized
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write(JsonUtil.toJsonString(Result.error("INVALID_TOKEN")));
+                response.getWriter().write(JsonUtil.toJsonString(Result.error("MISSING_TOKEN"+e)));
+                return;
+            }
+        } else {
+            // 如果没有token，检查当前请求是否需要认证
+            // 如果请求需要认证但没有token，返回401
+            if (isAuthenticationRequired(request)) {
+                log.warn("请求需要认证但未提供token: {}", requestURI);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(JsonUtil.toJsonString(Result.error("MISSING_TOKEN")));
                 return;
             }
         }
-        // 如果没有token，继续执行过滤器链，由Spring Security的权限配置决定是否允许访问
 
-        // 继续执行过滤器链
+        // 继续执行过滤器链，权限验证由Spring Security配置处理（返回403）
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 检查当前请求是否需要认证
+     * 根据Spring Security配置判断是否需要认证
+     */
+    private boolean isAuthenticationRequired(HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        
+        // 公开访问的路径不需要认证
+        String[] publicPaths = {
+                "/user/register", 
+                "/api/social-worker/login", 
+                "/api/social-worker/logout",
+                "/api/child/login", 
+                "/error",
+                "/common/upload",
+                "/api/judge0/webhook/callback",
+                "/doc.html", 
+                "/swagger-ui/", 
+                "/v3/api-docs/", 
+                "/webjars/", 
+                "/swagger-resources/",
+                "/static/", 
+                "/resources/"
+        };
+        
+        for (String path : publicPaths) {
+            if (requestURI.startsWith(path)) {
+                return false;
+            }
+        }
+        
+        // 其他路径需要认证
+        return true;
     }
 
     // 根据角色代码获取角色名称
