@@ -1,10 +1,15 @@
 package com.caresync.ai.utils;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JavaType;import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -25,9 +30,12 @@ public class JsonUtil {
     static {
         // 设置时区为东八区
         objectMapper.setTimeZone(TimeZone.getTimeZone("GMT+8"));
+        // 忽略未知属性
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 忽略null值字段
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         // 配置其他可能需要的属性
         // objectMapper.configure(SerializationFeature.INDENT_OUTPUT, true); // 格式化输出（可选）
-        // objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // 忽略未知属性
     }
 
     /**

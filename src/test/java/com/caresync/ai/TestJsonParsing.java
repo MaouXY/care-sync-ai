@@ -1,10 +1,17 @@
+package com.caresync.ai;
+
+import com.caresync.ai.utils.JsonUtil;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.test.context.SpringBootTest;
+
 import java.util.*;
 
+@SpringBootTest
 public class TestJsonParsing {
     public static void main(String[] args) {
-        ObjectMapper objectMapper = new ObjectMapper();
+        // 使用JsonUtil中的ObjectMapper，确保配置一致
+        ObjectMapper objectMapper = JsonUtil.getObjectMapper();
         
         // 模拟ai_suggestions JSON数据
         String aiSuggestionsJson = """
@@ -20,7 +27,7 @@ public class TestJsonParsing {
               "details": [
                 {"content": "初次见面，了解小明的兴趣爱好和日常生活情况。", "status": "completed", "assist_track_log_id": 1},
                 {"content": "一起参与小明感兴趣的活动（如绘画、下棋），建立初步信任。", "status": "completed", "assist_track_log_id": 2},
-                {"content": "与小明约定每周固定的见面时间，增加安全感。", "status": "in_progress", "assist_track_log_id": 3}
+                {"content": "与小明约定每周固定的见面时间，增加安全性。", "status": "in_progress", "assist_track_log_id": 3}
               ]
             },
             {

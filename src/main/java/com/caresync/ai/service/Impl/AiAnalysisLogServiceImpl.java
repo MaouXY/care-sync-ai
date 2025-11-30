@@ -3,9 +3,12 @@ package com.caresync.ai.service.Impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.caresync.ai.result.PageResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import com.caresync.ai.mapper.AiAnalysisLogMapper;
 import com.caresync.ai.model.DTO.AiAnalysisQueryDTO;
 import com.caresync.ai.model.VO.AiAnalysisResultVO;
 import com.caresync.ai.model.ai.ChatContent;
@@ -13,13 +16,11 @@ import com.caresync.ai.model.ai.ChatMessage;
 import com.caresync.ai.model.ai.ChatRequest;
 import com.caresync.ai.model.entity.AiAnalysisLog;
 import com.caresync.ai.model.entity.Child;
-import com.caresync.ai.mapper.AiAnalysisLogMapper;
-import com.caresync.ai.result.PageResult;
+import com.caresync.ai.service.IAiAnalysisLogService;
 import com.caresync.ai.service.IAiChatRecordService;
 import com.caresync.ai.service.IChildService;
-import com.caresync.ai.service.IAiAnalysisLogService;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.caresync.ai.utils.ArkUtil;
+import com.caresync.ai.utils.JsonUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,8 +59,9 @@ public class AiAnalysisLogServiceImpl extends ServiceImpl<AiAnalysisLogMapper, A
     @Autowired
     private AiAnalysisLogMapper aiAnalysisLogMapper;
 
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // 使用JsonUtil中的ObjectMapper，确保配置一致
+    private final ObjectMapper objectMapper = JsonUtil.getObjectMapper();
+    
     @Autowired
     private ArkUtil arkUtil;
 
