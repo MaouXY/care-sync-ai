@@ -6,6 +6,7 @@ import com.caresync.ai.context.BaseContext;
 import com.caresync.ai.model.DTO.ChildQueryDTO;
 import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
+import com.caresync.ai.model.VO.AssistSchemeListVO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.ChildInfoVO;
 import com.caresync.ai.model.VO.ChildQueueVO;
@@ -79,7 +80,7 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
      * @return 分页结果
      */
     @Override
-    public PageResult<AssistSchemeVO> getSchemeList(SchemeQueryDTO schemeQueryDTO) {
+    public PageResult<AssistSchemeListVO> getSchemeList(SchemeQueryDTO schemeQueryDTO) {
         // 设置分页参数
         int page = schemeQueryDTO.getPage() != null ? schemeQueryDTO.getPage() : 1;
         int pageSize = schemeQueryDTO.getPageSize() != null ? schemeQueryDTO.getPageSize() : 10;
@@ -130,16 +131,16 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         List<AiAssistScheme> schemes = this.list(queryWrapper);
         PageInfo<AiAssistScheme> pageInfo = new PageInfo<>(schemes);
 
-        // 转换为VO并补充信息
-        List<AssistSchemeVO> schemeVOList = convertToSchemeVOList(schemes);
+        // 转换为列表VO并补充信息
+        List<AssistSchemeListVO> schemeListVOList = convertToSchemeListVOList(schemes);
 
         // 构建返回结果
-        return new PageResult<>(pageInfo.getTotal(), schemeVOList);
+        return new PageResult<>(pageInfo.getTotal(), schemeListVOList);
     }
 
     // 未实现
     @Override
-    public PageResult<AssistSchemeVO> getSchemeListManage(SchemeQueryDTO schemeQueryDTO) {
+    public PageResult<AssistSchemeListVO> getSchemeListManage(SchemeQueryDTO schemeQueryDTO) {
         // 这里可以实现管理视角的查询逻辑，例如增加更多筛选条件或权限控制
         // 目前暂时复用普通视角的查询逻辑
         return getSchemeList(schemeQueryDTO);
@@ -943,6 +944,75 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
             // 解析失败时记录日志
             log.error("解析AI建议失败: {}", e.getMessage());
         }
+    }
+
+    /**
+     * 将AiAssistScheme列表转换为AssistSchemeListVO列表，用于列表查询
+     */
+    private List<AssistSchemeListVO> convertToSchemeListVOList(List<AiAssistScheme> schemeList) {
+        if (schemeList.isEmpty()) {
+            return List.of();
+        }
+
+        // 提取所有儿童ID和社工ID
+        List<Long> childIds = schemeList.stream()
+                .map(AiAssistScheme::getChildId)
+                .distinct()
+                .collect(Collectors.toList());
+        List<Long> workerIds = schemeList.stream()
+                .map(AiAssistScheme::getWorkerId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 批量获取儿童和社工信息
+        Map<Long, String> childNameMap = childIds.stream()
+                .collect(Collectors.toMap(id -> id, id -> {
+                    ChildInfoVO childInfo = childService.getChildInfo(id);
+                    return childInfo != null ? childInfo.getName() : "未知儿童";
+                }));
+
+        Map<Long, String> workerNameMap = workerIds.stream()
+                .collect(Collectors.toMap(id -> id, id -> {
+                    SocialWorkerInfoVO workerInfo = socialWorkerService.getSocialWorkerInfo(id);
+                    return workerInfo != null ? workerInfo.getName() : "未知社工";
+                }));
+
+        // 批量获取儿童年龄信息
+        Map<Long, String> childAgeMap = childIds.stream()
+                .collect(Collectors.toMap(id -> id, id -> {
+                    ChildInfoVO childInfo = childService.getChildInfo(id);
+                    return childInfo != null && childInfo.getAge() != null ?
+                            childInfo.getAge().toString() + "岁" : "未知年龄";
+                }));
+
+        // 转换并补充信息
+        return schemeList.stream().map(scheme -> {
+            AssistSchemeListVO vo = new AssistSchemeListVO();
+            // 复制基本属性
+            vo.setId(scheme.getId());
+            vo.setChildId(scheme.getChildId());
+            vo.setWorkerId(scheme.getWorkerId());
+            vo.setTarget(scheme.getTarget());
+            // 修复类型转换问题，处理String数组转为List<String>
+            if (scheme.getMeasures() instanceof String[]) {
+                vo.setMeasures(Arrays.asList((String[]) scheme.getMeasures()));
+            } else if (scheme.getMeasures() instanceof List) {
+                vo.setMeasures((List<String>) scheme.getMeasures());
+            } else {
+                vo.setMeasures(Collections.emptyList());
+            }
+            vo.setCycle(scheme.getCycle());
+            vo.setSchemeStatus(scheme.getSchemeStatus());
+            vo.setWorkerAdjustReason(scheme.getWorkerAdjustReason());
+            vo.setCreateTime(scheme.getCreateTime());
+            vo.setUpdateTime(scheme.getUpdateTime());
+            // 补充扩展字段
+            vo.setChildName(childNameMap.getOrDefault(scheme.getChildId(), "未知儿童"));
+            vo.setChildAge(childAgeMap.getOrDefault(scheme.getChildId(), "未知年龄"));
+            vo.setWorkerName(workerNameMap.getOrDefault(scheme.getWorkerId(), "未知社工"));
+
+            return vo;
+        }).collect(Collectors.toList());
     }
 
     /**

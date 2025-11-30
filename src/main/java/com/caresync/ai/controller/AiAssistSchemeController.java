@@ -4,6 +4,7 @@ import com.caresync.ai.model.DTO.ChangeSchemeStatusDTO;
 import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
 import com.caresync.ai.model.DTO.UpdateSchemeDTO;
+import com.caresync.ai.model.VO.AssistSchemeListVO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
 import com.caresync.ai.result.PageResult;
@@ -53,8 +54,8 @@ public class AiAssistSchemeController {
      */
     @PostMapping("/list")
     @Operation(summary = "获取方案列表", description = "按儿童ID或状态查询服务方案列表")
-    public Result<PageResult<AssistSchemeVO>> getSchemeList(@RequestBody SchemeQueryDTO schemeQueryDTO) {
-        PageResult<AssistSchemeVO> result = aiAssistSchemeService.getSchemeList(schemeQueryDTO);
+    public Result<PageResult<AssistSchemeListVO>> getSchemeList(@RequestBody SchemeQueryDTO schemeQueryDTO) {
+        PageResult<AssistSchemeListVO> result = aiAssistSchemeService.getSchemeList(schemeQueryDTO);
         return Result.success(result);
     }
 
@@ -117,8 +118,8 @@ public class AiAssistSchemeController {
      */
     //@PostMapping("/manage/list")
     //@Operation(summary = "管理视角获取方案列表", description = "管理视角按条件查询所有服务方案列表")
-    public Result<PageResult<AssistSchemeVO>> getSchemeListManage(@RequestBody SchemeQueryDTO schemeQueryDTO) {
-        PageResult<AssistSchemeVO> result = aiAssistSchemeService.getSchemeListManage(schemeQueryDTO);
+    public Result<PageResult<AssistSchemeListVO>> getSchemeListManage(@RequestBody SchemeQueryDTO schemeQueryDTO) {
+        PageResult<AssistSchemeListVO> result = aiAssistSchemeService.getSchemeListManage(schemeQueryDTO);
         return Result.success(result);
     }
 

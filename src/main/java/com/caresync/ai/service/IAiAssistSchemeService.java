@@ -2,6 +2,7 @@ package com.caresync.ai.service;
 
 import com.caresync.ai.model.DTO.GenerateSchemeDTO;
 import com.caresync.ai.model.DTO.SchemeQueryDTO;
+import com.caresync.ai.model.VO.AssistSchemeListVO;
 import com.caresync.ai.model.VO.AssistSchemeVO;
 import com.caresync.ai.model.VO.DetailSchemeVO;
 import com.caresync.ai.model.VO.TaskStatisticsVO;
@@ -24,14 +25,14 @@ public interface IAiAssistSchemeService extends IService<AiAssistScheme> {
      * @param schemeQueryDTO 查询条件
      * @return 分页结果
      */
-    PageResult<AssistSchemeVO> getSchemeList(SchemeQueryDTO schemeQueryDTO);
+    PageResult<AssistSchemeListVO> getSchemeList(SchemeQueryDTO schemeQueryDTO);
 
     /**
      * 获取服务方案列表（管理视角）
      * @param schemeQueryDTO 查询条件
      * @return 分页结果
      */
-    PageResult<AssistSchemeVO> getSchemeListManage(SchemeQueryDTO schemeQueryDTO);
+    PageResult<AssistSchemeListVO> getSchemeListManage(SchemeQueryDTO schemeQueryDTO);
 
     /**
      * 获取服务方案详情
