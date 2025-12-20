@@ -57,7 +57,7 @@ public class AiAssistScheme extends Model<AiAssistScheme> {
     @TableField("ai_analysis_id")
     private Long aiAnalysisId;
 
-    @TableField("evaluation_index")
+    @TableField(value = "evaluation_index", typeHandler = JsonbTypeHandler.class)
     private Object evaluationIndex;
 
     @TableField(value = "create_time", fill = FieldFill.INSERT)

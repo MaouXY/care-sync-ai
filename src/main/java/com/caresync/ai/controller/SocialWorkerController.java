@@ -47,7 +47,11 @@ public class SocialWorkerController {
     @Operation(summary = "社工登录", description = "根据社工账号和密码登录")
     public Result<LoginVO> login(@RequestBody SocialWorkerLoginDTO socialWorkerLoginDTO) {
         // 保留原有实现，因为已经实现了登录功能
-        return Result.success(socialWorkerService.login(socialWorkerLoginDTO));
+        LoginVO loginVO = socialWorkerService.login(socialWorkerLoginDTO);
+        if (loginVO == null) {
+            return Result.error("登录失败");
+        }
+        return Result.success(loginVO);
     }
 
     /**

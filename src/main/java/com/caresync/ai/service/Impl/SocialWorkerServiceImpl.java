@@ -76,7 +76,8 @@ public class SocialWorkerServiceImpl extends ServiceImpl<SocialWorkerMapper, Soc
 
         // 验证社工是否存在以及密码是否正确
         if (socialWorker == null || !passwordEncoderUtil.matches(password, socialWorker.getPassword())) {
-            throw new BusinessException(CodeConstant.INVALID_CREDENTIALS_CODE, MessageConstant.PASSWORD_ERROR);
+            //throw new BusinessException(CodeConstant.INVALID_CREDENTIALS_CODE, MessageConstant.PASSWORD_ERROR);
+            return null;
         }
 
         // 生成JWT令牌

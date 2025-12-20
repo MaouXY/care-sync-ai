@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -173,7 +174,12 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         // 查询并设置社工姓名
         SocialWorkerInfoVO workerInfo = socialWorkerService.getSocialWorkerInfo(scheme.getWorkerId());
         if (workerInfo != null) {
-            detailVO.setWorkerName(workerInfo.getName());
+            detailVO.setWorkerInfo(DetailSchemeVO.WorkerDetailInfo.builder()
+                    .workerNo(workerInfo.getWorkerNo())
+                    .name(workerInfo.getName())
+                    .phone(workerInfo.getPhone())
+                    .role(workerInfo.getRole())
+                    .build());
         }
 
 
@@ -521,6 +527,81 @@ public class AiAssistSchemeServiceImpl extends ServiceImpl<AiAssistSchemeMapper,
         if (workerInfo != null) {
             vo.setWorkerName(workerInfo.getName());
         }
+        
+        return vo;
+    }
+    
+    /**
+     * 开始服务方案
+     * @param id 方案ID
+     */
+    @Override
+    public void startScheme(Long id) {
+        log.info("开始启动服务方案，方案ID: {}", id);
+        
+        // 1. 查询方案
+        AiAssistScheme scheme = this.getById(id);
+        if (scheme == null) {
+            log.error("未找到ID为{}的服务方案", id);
+            throw new RuntimeException("服务方案不存在");
+        }
+        
+        // 2. 检查方案状态
+        if (!"DRAFT".equals(scheme.getSchemeStatus())) {
+            log.error("方案状态不正确，当前状态: {}, 期望状态: DRAFT", scheme.getSchemeStatus());
+            throw new RuntimeException("只有草稿状态的方案才能启动");
+        }
+        
+        // 3. 更新方案状态为进行中
+        scheme.setSchemeStatus("IN_PROGRESS");
+        scheme.setUpdateTime(LocalDateTime.now());
+        
+        // 4. 保存更新
+        boolean updated = this.updateById(scheme);
+        if (!updated) {
+            log.error("更新服务方案状态失败，方案ID: {}", id);
+            throw new RuntimeException("启动服务方案失败");
+        }
+        
+        log.info("成功启动服务方案，方案ID: {}", id);
+    }
+    
+    /**
+     * 转换为AssistSchemeVO
+     */
+    private AssistSchemeVO convertToAssistSchemeVO(AiAssistScheme scheme) {
+        AssistSchemeVO vo = new AssistSchemeVO();
+        vo.setId(scheme.getId());
+        vo.setChildId(scheme.getChildId());
+        vo.setWorkerId(scheme.getWorkerId());
+        vo.setTarget(scheme.getTarget());
+        // 修复类型转换问题，处理String数组转为List<String>
+        if (scheme.getMeasures() instanceof String[]) {
+            vo.setMeasures(Arrays.asList((String[]) scheme.getMeasures()));
+        } else if (scheme.getMeasures() instanceof List) {
+            vo.setMeasures((List<String>) scheme.getMeasures());
+        } else {
+            vo.setMeasures(Collections.emptyList());
+        }
+        vo.setCycle(scheme.getCycle());
+        vo.setSchemeStatus(scheme.getSchemeStatus());
+        vo.setAiSuggestions(scheme.getAiSuggestions());
+        vo.setWorkerAdjustReason(scheme.getWorkerAdjustReason());
+        vo.setCreateTime(scheme.getCreateTime());
+        
+        // 补充儿童和社工姓名
+        ChildInfoVO childInfo = childService.getChildInfo(scheme.getChildId());
+        if (childInfo != null) {
+            vo.setChildName(childInfo.getName());
+        }
+        
+        SocialWorkerInfoVO workerInfo = socialWorkerService.getSocialWorkerInfo(scheme.getWorkerId());
+        if (workerInfo != null) {
+            vo.setWorkerName(workerInfo.getName());
+        }
+        
+        // 解析ai_suggestions中的结构化信息
+        parseAiSuggestions(scheme.getAiSuggestions(), vo);
         
         return vo;
     }

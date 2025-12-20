@@ -14,6 +14,7 @@ import com.caresync.ai.result.Result;
 import com.caresync.ai.service.IAiAssistSchemeService;
 import com.caresync.ai.service.IChildService;
 import com.caresync.ai.service.IAssistTrackLogService;
+import com.caresync.ai.service.ISocialWorkerService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,13 +48,16 @@ public class AssistTrackController {
     private IAssistTrackLogService assistTrackLogService;
 
     @Autowired
+    private ISocialWorkerService socialWorkerService;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     /**
      * 获取服务详情
      */
     @GetMapping("/scheme/{id}")
-    @Operation(summary = "获取服务详情", description = "根据服务方案ID获取详细信息")
+    @Operation(summary = "获取服务详情", description = "根据服务方案ID获取详细信息，包含完整的儿童和社工信息")
     public Result<DetailSchemeVO> getSchemeDetail(@PathVariable Long id) {
         try {
             log.info("开始获取服务方案详情，方案ID: {}", id);
@@ -69,6 +73,46 @@ public class AssistTrackController {
             if (detailVO == null) {
                 log.warn("未找到服务方案详情，方案ID: {}", id);
                 return Result.error("服务方案不存在");
+            }
+
+            // 3. 补充完整的儿童信息
+            if (detailVO.getChildInfo() != null && detailVO.getChildInfo().getId() != null) {
+                Child child = childService.getById(detailVO.getChildInfo().getId());
+                if (child != null) {
+                    // 更新ChildDetailInfo对象
+                    DetailSchemeVO.ChildDetailInfo childInfo = detailVO.getChildInfo();
+                    childInfo.setChildNo(child.getChildNo());
+                    childInfo.setServiceStatus(child.getServiceStatus());
+                    childInfo.setAddress(child.getAddress());
+                    childInfo.setPhone(child.getPhone());
+                    childInfo.setGuardianName(child.getGuardianName());
+                    childInfo.setGuardianPhone(child.getGuardianPhone());
+                    childInfo.setHasNewChat(child.getHasNewChat());
+                    childInfo.setAiAnalysisTime(child.getAiAnalysisTime());
+                    
+                    log.info("已补充儿童信息，ID: {}, 姓名: {}, 风险等级: {}", 
+                            child.getId(), child.getName(), child.getRiskLevel());
+                }
+            }
+
+            // 4. 补充完整的社工信息
+            if (detailVO.getWorkerId() != null) {
+                SocialWorkerInfoVO workerInfo = socialWorkerService.getSocialWorkerInfo(detailVO.getWorkerId());
+                if (workerInfo != null) {
+                    // 创建WorkerDetailInfo对象
+                    DetailSchemeVO.WorkerDetailInfo workerDetailInfo = DetailSchemeVO.WorkerDetailInfo.builder()
+                            .id(workerInfo.getId())
+                            .workerNo(workerInfo.getWorkerNo())
+                            .name(workerInfo.getName())
+                            .phone(workerInfo.getPhone())
+                            .role(workerInfo.getRole())
+                            .createTime(workerInfo.getCreateTime())
+                            .updateTime(workerInfo.getUpdateTime())
+                            .build();
+                    
+                    detailVO.setWorkerInfo(workerDetailInfo);
+                    log.info("已补充社工信息，ID: {}, 姓名: {}", workerInfo.getId(), workerInfo.getName());
+                }
             }
 
             log.info("成功获取服务方案详情，方案ID: {}", id);
@@ -631,7 +675,7 @@ public class AssistTrackController {
         logVO.setId(detailVO.getId());
         logVO.setTarget(detailVO.getTarget());
         logVO.setWorkerId(detailVO.getWorkerId());
-        logVO.setWorkerName(detailVO.getWorkerName());
+        logVO.setWorkerName(detailVO.getWorkerInfo().getWorkerName());
         logVO.setSchemeStatus(detailVO.getSchemeStatus());
         logVO.setWorkerAdjustReason(detailVO.getWorkerAdjustReason());
         logVO.setCreateTime(detailVO.getCreateTime());

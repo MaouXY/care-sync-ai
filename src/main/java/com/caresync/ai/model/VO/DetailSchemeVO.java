@@ -22,27 +22,18 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL) // 忽略null值字段
 public class DetailSchemeVO implements Serializable {
     // 方案基本信息
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // 仅反序列化时使用，序列化时忽略
     private Long id;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String target;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private LocalDateTime createTime;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Integer cycle;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String schemeStatus;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String workerAdjustReason;
     
     // 社工信息
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Long workerId;
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-    private String workerName;
+    private WorkerDetailInfo workerInfo;
     
     // 儿童信息
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private ChildDetailInfo childInfo;
     
     // 方案目标列表
@@ -54,6 +45,25 @@ public class DetailSchemeVO implements Serializable {
     private List<WeeklyMeasure> measuresSuggest;
     
     /**
+     * 社工详细信息内部类
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class WorkerDetailInfo implements Serializable {
+        private Long id;
+        private String workerNo;
+        private String workerName;
+        private String name;
+        private String phone;
+        private String role;
+        private LocalDateTime createTime;
+        private LocalDateTime updateTime;
+    }
+    
+    /**
      * 儿童详细信息内部类
      */
     @Data
@@ -63,10 +73,18 @@ public class DetailSchemeVO implements Serializable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ChildDetailInfo implements Serializable {
         private Long id;
+        private String childNo;
         private String name;
         private Integer age;
         private String gender;
         private String riskLevel;
+        private String serviceStatus;
+        private String address;
+        private String phone;
+        private String guardianName;
+        private String guardianPhone;
+        private Boolean hasNewChat;
+        private LocalDateTime aiAnalysisTime;
         private Map<String, Object> emotionScores; // AI结构化信息中的情绪分数
         private List<String> emotionTrend; // AI结构化信息中的情感趋势
     }

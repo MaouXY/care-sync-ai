@@ -47,4 +47,10 @@ public interface IAiAssistSchemeService extends IService<AiAssistScheme> {
      * @return 服务方案VO
      */
     AssistSchemeVO generateScheme(GenerateSchemeDTO generateSchemeDTO);
+    
+    /**
+     * 开始服务方案
+     * @param id 方案ID
+     */
+    void startScheme(Long id);
 }

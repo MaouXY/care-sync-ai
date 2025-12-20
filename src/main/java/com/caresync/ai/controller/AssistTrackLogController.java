@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.caresync.ai.result.Result;
 import com.caresync.ai.model.entity.AssistTrackLog;
 import com.caresync.ai.service.IAssistTrackLogService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/social-worker/track-log")
+@Tag(name = "服务跟踪管理模块接口", description = "AI服务进度日志控制器")
 public class AssistTrackLogController {
 
     @Autowired
@@ -34,6 +37,7 @@ public class AssistTrackLogController {
      * @return 分页结果
      */
     @GetMapping("/list")
+    @Operation(summary = "查询AI服务进度日志列表", description = "根据时间倒序排序查询AI服务进度日志列表")
     public Result<Page<AssistTrackLog>> getTrackLogList(
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
             @RequestParam(value = "pageSize", defaultValue = "10") Integer pageSize) {
@@ -68,6 +72,7 @@ public class AssistTrackLogController {
      * @return 分页结果
      */
     @GetMapping("/by-scheme/{schemeId}")
+    @Operation(summary = "根据服务方案ID查询进度日志", description = "根据服务方案ID查询AI服务进度日志列表，按创建时间倒序排序")
     public Result<Page<AssistTrackLog>> getTrackLogBySchemeId(
             @PathVariable("schemeId") Long schemeId,
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
@@ -104,6 +109,7 @@ public class AssistTrackLogController {
      * @return 分页结果
      */
     @GetMapping("/by-child/{childId}")
+    @Operation(summary = "根据儿童ID查询进度日志", description = "根据儿童ID查询AI服务进度日志列表，按创建时间倒序排序")
     public Result<Page<AssistTrackLog>> getTrackLogByChildId(
             @PathVariable("childId") Long childId,
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
@@ -140,6 +146,7 @@ public class AssistTrackLogController {
      * @return 分页结果
      */
     @GetMapping("/by-worker/{workerId}")
+    @Operation(summary = "根据社工ID查询进度日志", description = "根据社工ID查询AI服务进度日志列表，按创建时间倒序排序")
     public Result<Page<AssistTrackLog>> getTrackLogByWorkerId(
             @PathVariable("workerId") Long workerId,
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,
@@ -176,6 +183,7 @@ public class AssistTrackLogController {
      * @return 分页结果
      */
     @GetMapping("/by-status/{status}")
+    @Operation(summary = "根据完成状态查询进度日志", description = "根据完成状态查询AI服务进度日志列表，按创建时间倒序排序")
     public Result<Page<AssistTrackLog>> getTrackLogByStatus(
             @PathVariable("status") String status,
             @RequestParam(value = "pageNum", defaultValue = "1") Integer pageNum,

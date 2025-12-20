@@ -75,6 +75,21 @@ public class AiAssistSchemeController {
     }
 
     /**
+     *  根据id将方案状态设置为进行中
+     */
+     @PostMapping("/start/{id}")
+    @Operation(summary = "开始服务方案", description = "将服务方案状态设置为进行中")
+    public Result<Void> startScheme(@PathVariable Long id) {
+        try {
+            aiAssistSchemeService.startScheme(id);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("启动服务方案失败: {}", e.getMessage(), e);
+            return Result.error("启动服务方案失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 编辑方案
      * @param id 方案ID
      * @param updateSchemeDTO 更新方案DTO
