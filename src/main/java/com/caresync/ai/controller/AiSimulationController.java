@@ -173,7 +173,6 @@ public class AiSimulationController {
      * @param sendTrainingMessageDTO 发送训练消息DTO
      * @return 训练对话响应结果
      */
-
     @PostMapping("/send")
     @Operation(summary = "发送训练消息", description = "社工向模拟儿童发送消息")
     public Result<TrainingChatResponseVO> sendTrainingMessage(@RequestBody SendTrainingMessageDTO sendTrainingMessageDTO) {

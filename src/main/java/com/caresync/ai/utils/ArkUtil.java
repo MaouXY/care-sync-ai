@@ -7,9 +7,12 @@ import com.volcengine.ark.runtime.model.bot.completion.chat.BotChatCompletionRes
 import com.volcengine.ark.runtime.model.completion.chat.ChatMessage;
 import com.volcengine.ark.runtime.model.completion.chat.ChatMessageRole;
 import com.volcengine.ark.runtime.service.ArkService;
+import io.reactivex.Flowable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import reactor.adapter.rxjava.RxJava2Adapter;
+import reactor.core.publisher.Flux;
 
 
 import java.time.LocalDate;
@@ -114,6 +117,65 @@ public class ArkUtil {
             ChatContent defaultContent = new ChatContent();
             defaultContent.setContent("当前AI服务不可用，请稍后再试");
             return defaultContent;
+        }
+    }
+
+    // 流式聊天方法
+    public Flux<String> streamBotChat(ChatRequest request, String systemPrompt) {
+        try {
+            System.out.println(LocalDate.now() + " " + request.toString());
+
+            // 创建消息列表
+            List<ChatMessage> messages = new ArrayList<>();
+            // 添加系统消息
+            ChatMessage systemMessage = ChatMessage.builder()
+                    .role(ChatMessageRole.SYSTEM)
+                    .content(systemPrompt)
+                    .build();
+            messages.add(systemMessage);
+
+            // 添加历史消息
+            if (request.getHistory() != null && !request.getHistory().isEmpty()) {
+                for (com.caresync.ai.model.ai.ChatMessage historyMsg : request.getHistory()) {
+                    ChatMessageRole role = "user".equals(historyMsg.getRole()) ? ChatMessageRole.USER : ChatMessageRole.ASSISTANT;
+                    ChatMessage chatMessage = ChatMessage.builder()
+                            .role(role)
+                            .content(historyMsg.getContent())
+                            .build();
+                    messages.add(chatMessage);
+                }
+            }
+
+            // 添加当前用户消息
+            ChatMessage userMessage = ChatMessage.builder()
+                    .role(ChatMessageRole.USER)
+                    .content(request.getPrompt())
+                    .build();
+            messages.add(userMessage);
+
+            // 创建Bot聊天完成请求，开启流式
+            BotChatCompletionRequest botRequest = BotChatCompletionRequest.builder()
+                    .botId(botId)
+                    .messages(messages)
+                    .stream(true)
+                    .build();
+
+            // 调用流式API，使用正确的方法名
+            Flowable<String> flowable = arkService.streamBotChatCompletion(botRequest)
+                    .map(response -> {
+                        if (response.getChoices() != null && !response.getChoices().isEmpty()) {
+                            Object contentObj = response.getChoices().get(0).getMessage().getContent();
+                            return contentObj != null ? contentObj.toString() : "";
+                        }
+                        return "";
+                    })
+                    .doOnError(Throwable::printStackTrace);
+
+            // 将Flowable转换为Flux
+            return RxJava2Adapter.flowableToFlux(flowable);
+        } catch (Exception e) {
+            System.err.println("调用AI服务失败: " + e.getMessage());
+            return Flux.just("当前AI服务不可用，请稍后再试");
         }
     }
 }
