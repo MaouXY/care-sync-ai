@@ -18,6 +18,8 @@ import com.caresync.ai.service.ITrainingEvaluationService;
 import com.caresync.ai.service.ITrainingSessionService;
 import com.caresync.ai.service.Impl.AsyncScoreService;
 import com.caresync.ai.utils.ArkUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.volcengine.ark.runtime.model.bot.completion.chat.BotChatCompletionRequest;
 import com.volcengine.ark.runtime.model.completion.chat.ChatMessageRole;
@@ -31,11 +33,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.caresync.ai.utils.JsonUtil;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -169,6 +174,62 @@ public class AiSimulationController {
     }
 
     /**
+     * 发送训练消息（流式接口）
+     * @param sendTrainingMessageDTO 发送训练消息DTO
+     * @return SSE流式响应
+     */
+    @PostMapping(value = "/send/stream", produces = "text/event-stream")
+    @Operation(summary = "发送训练消息（流式接口）", description = "社工向模拟儿童发送消息，流式返回AI回复")
+    public SseEmitter sendTrainingMessageStream(@RequestBody SendTrainingMessageDTO sendTrainingMessageDTO) {
+        // 创建SSE发射器，设置超时时间为5分钟
+        SseEmitter sseEmitter = new SseEmitter(300000L);
+        
+        // 异步处理，避免阻塞主线程
+        new Thread(() -> {
+            try {
+                logger.info("收到训练消息（流式），会话ID: {}, 内容: {}", sendTrainingMessageDTO.getSessionId(), sendTrainingMessageDTO.getPrompt());
+
+                // 1. 验证会话是否存在
+                Long sessionId = sendTrainingMessageDTO.getSessionId();
+                TrainingSession session = trainingSessionService.getById(sessionId);
+                if (session == null) {
+                    log.error("训练会话不存在，会话ID: {}", sessionId);
+                    sseEmitter.send(SseEmitter.event().name("error").data("训练会话不存在"));
+                    sseEmitter.complete();
+                    return;
+                }
+
+                // 2. 保存社工发送的消息
+                TrainingChatRecord workerMessage = TrainingChatRecord.builder()
+                        .sessionId(sessionId)
+                        .roundNum(session.getTotalRounds()+1)
+                        .contentType("TEXT")
+                        .content(sendTrainingMessageDTO.getPrompt())
+                        .aiReply(false) // 社工消息
+                        .aiGuidance("")
+                        .build();
+
+                trainingChatRecordService.save(workerMessage);
+                logger.info("保存社工消息成功，记录ID: {}", workerMessage.getId());
+
+                // 3. 流式调用AI服务获取三个部分的响应
+                streamAiResponse(sseEmitter, sendTrainingMessageDTO.getPrompt(), sendTrainingMessageDTO.getHistory(), sessionId);
+                
+            } catch (Exception e) {
+                logger.error("发送训练消息（流式）异常: {}", e.getMessage());
+                try {
+                    sseEmitter.send(SseEmitter.event().name("error").data("发送消息失败，请重试"));
+                    sseEmitter.completeWithError(e);
+                } catch (Exception ex) {
+                    // 忽略发送错误
+                }
+            }
+        }).start();
+
+        return sseEmitter;
+    }
+
+    /**
      * 发送训练消息
      * @param sendTrainingMessageDTO 发送训练消息DTO
      * @return 训练对话响应结果
@@ -257,6 +318,200 @@ public class AiSimulationController {
         } catch (Exception e) {
             logger.error("发送训练消息异常: {}", e.getMessage());
             return Result.error("发送消息失败，请重试");
+        }
+    }
+
+    /**
+     * 流式调用AI服务，获取三个部分的响应
+     */
+    private void streamAiResponse(SseEmitter sseEmitter, String workerMessage, List<ChatMessage> history, Long sessionId) {
+        try {
+            // 设置系统提示词，要求模型一次性输出三个部分
+            String systemPrompt = "你是一个专业的儿童心理辅导AI助手，需要同时完成三个任务：\n" +
+                    "1. 模拟留守儿童的角色进行回复（用儿童的语气，简单、直接、真实）\n" +
+                    "2. 对儿童回复进行情感分析（输出JSON格式）\n" +
+                    "3. 为社工提供专业指导意见\n" +
+                    "\n" +
+                    "请按照以下格式输出结果：\n" +
+                    "---儿童回复---\n" +
+                    "[这里放置模拟儿童的回复内容]\n" +
+                    "---情感分析---\n" +
+                    "{\"detected_emotions\": [{\"emotion\": \"情绪名称\", \"confidence\": 置信度}, ...], \"emotion_intensity\": 情绪强度}\n" +
+                    "---指导意见---\n" +
+                    "[这里放置对社工的专业指导意见]\n" +
+                    "\n" +
+                    "注意：情感分析部分必须是严格的JSON格式，情绪名称可以是：开心、伤心、孤独、焦虑、生气、害怕、平静等。置信度和情绪强度范围是0-100的整数。";
+            
+            // 添加当前用户消息到历史记录
+            ChatMessage userMessage = ChatMessage.builder()
+                    .role("user")
+                    .content(workerMessage)
+                    .build();
+            
+            List<ChatMessage> updatedHistory = new ArrayList<>();
+            if (history != null) {
+                updatedHistory.addAll(history);
+            }
+            updatedHistory.add(userMessage);
+
+            // 构建聊天请求
+            ChatRequest chatRequest = ChatRequest.builder()
+                    .prompt("请根据社工的对话内容，一次性完成三个任务：模拟儿童回复、情感分析和提供指导意见。")
+                    .history(updatedHistory)
+                    .build();
+
+            // 用于累加完整回复
+            StringBuilder fullResponse = new StringBuilder();
+            
+            // 调用ArkUtil的流式方法获取回复
+            arkUtil.streamBotChat(chatRequest, systemPrompt)
+                    .doOnError(throwable -> {
+                        logger.error("流式AI调用失败: {}", throwable.getMessage());
+                        try {
+                            // 发送错误信息
+                            Map<String, Object> errorChunk = new HashMap<>();
+                            errorChunk.put("id", "chatcmpl-" + UUID.randomUUID());
+                            errorChunk.put("object", "chat.completion.chunk");
+                            errorChunk.put("created", System.currentTimeMillis());
+                            errorChunk.put("model", "default");
+                            
+                            Map<String, Object> choice = new HashMap<>();
+                            choice.put("index", 0);
+                            
+                            Map<String, Object> delta = new HashMap<>();
+                            delta.put("content", "AI服务错误: " + throwable.getMessage());
+                            choice.put("delta", delta);
+                            choice.put("finish_reason", null);
+                            
+                            errorChunk.put("choices", new Object[]{choice});
+                            
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            String errorJson = objectMapper.writeValueAsString(errorChunk);
+                            sseEmitter.send("data: " + errorJson + "\n\n");
+                            sseEmitter.completeWithError(throwable);
+                        } catch (Exception e) {
+                            // 忽略发送错误
+                        }
+                    })
+                    .doFinally(signalType -> {
+                        try {
+                            // 解析完整回复并保存到数据库
+                            if (!fullResponse.isEmpty()) {
+                                String combinedResponse = fullResponse.toString();
+                                logger.info("流式AI响应完整内容: {}", combinedResponse);
+                                
+                                // 解析合并的响应，提取三个部分
+                                String childReply = extractSection(combinedResponse, "---儿童回复---", "---情感分析---");
+                                String emotionAnalysis = extractSection(combinedResponse, "---情感分析---", "---指导意见---");
+                                String aiGuidance = extractSection(combinedResponse, "---指导意见---", null);
+                                
+                                // 设置默认值，防止空指针
+                                if (childReply == null || childReply.trim().isEmpty()) {
+                                    childReply = "我知道了...";
+                                }
+                                
+                                if (emotionAnalysis == null || emotionAnalysis.trim().isEmpty()) {
+                                    emotionAnalysis = "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}";
+                                }
+                                
+                                if (aiGuidance == null || aiGuidance.trim().isEmpty()) {
+                                    aiGuidance = "建议社工继续保持耐心倾听，给予儿童更多的情感支持和鼓励。";
+                                }
+                                
+                                // 验证情感分析是否为有效的JSON格式
+                                try {
+                                    objectMapper.readTree(emotionAnalysis);
+                                } catch (Exception e) {
+                                    logger.warn("情感分析结果不是有效的JSON格式，使用默认值: {}", emotionAnalysis);
+                                    emotionAnalysis = "{\"detected_emotions\": [{\"emotion\": \"平静\", \"confidence\": 50}], \"emotion_intensity\": 50}";
+                                }
+                                
+                                // 保存AI回复的消息（儿童模拟回复）
+                                TrainingSession session = trainingSessionService.getById(sessionId);
+                                if (session != null) {
+                                    TrainingChatRecord aiReplyMessage = TrainingChatRecord.builder()
+                                            .sessionId(sessionId)
+                                            .roundNum(session.getTotalRounds())
+                                            .contentType("TEXT")
+                                            .content(childReply)
+                                            .aiReply(true)
+                                            .emotionAnalysis(emotionAnalysis)
+                                            .aiGuidance(aiGuidance)
+                                            .build();
+
+                                    trainingChatRecordService.save(aiReplyMessage);
+                                    logger.info("保存AI回复消息成功，记录ID: {}", aiReplyMessage.getId());
+
+                                    // 更新会话的总轮次
+                                    session.setTotalRounds(session.getTotalRounds()+2);
+                                    trainingSessionService.updateById(session);
+                                    logger.info("更新会话轮次成功，新轮次: {}", session.getTotalRounds());
+                                }
+                            }
+                        } catch (Exception e) {
+                            logger.error("保存AI回复消息异常: {}", e.getMessage());
+                        } finally {
+                            try {
+                                // 发送流结束信号
+                                sseEmitter.send("data: [DONE]\n\n");
+                                sseEmitter.complete();
+                            } catch (Exception e) {
+                                // 忽略发送错误
+                            }
+                        }
+                    })
+                    .subscribe(content -> {
+                        try {
+                            if (!content.isEmpty()) {
+                                // 累加完整回复
+                                fullResponse.append(content);
+                                
+                                // 构造符合OpenAI格式的JSON数据
+                                Map<String, Object> chatChunk = new HashMap<>();
+                                chatChunk.put("id", "chatcmpl-" + UUID.randomUUID());
+                                chatChunk.put("object", "chat.completion.chunk");
+                                chatChunk.put("created", System.currentTimeMillis());
+                                chatChunk.put("model", "default");
+                                
+                                // 构造choices数组
+                                Map<String, Object> choice = new HashMap<>();
+                                choice.put("index", 0);
+                                
+                                // 构造delta对象（增量内容）
+                                Map<String, Object> delta = new HashMap<>();
+                                delta.put("content", content);
+                                choice.put("delta", delta);
+                                choice.put("finish_reason", null);
+                                
+                                chatChunk.put("choices", new Object[]{choice});
+                                
+                                // 转换为JSON字符串
+                                ObjectMapper objectMapper = new ObjectMapper();
+                                String json = objectMapper.writeValueAsString(chatChunk);
+                                
+                                // 推送当前片段到前端，使用标准SSE格式
+                                sseEmitter.send("data: " + json + "\n\n");
+                            }
+                        } catch (JsonProcessingException e) {
+                            logger.error("JSON序列化失败: {}", e.getMessage());
+                        } catch (Exception e) {
+                            logger.error("推送流式数据失败: {}", e.getMessage());
+                            try {
+                                sseEmitter.completeWithError(e);
+                            } catch (Exception ex) {
+                                // 忽略发送错误
+                            }
+                        }
+                    });
+                    
+        } catch (Exception e) {
+            logger.error("流式AI响应异常: {}", e.getMessage());
+            try {
+                sseEmitter.send(SseEmitter.event().name("error").data("流式AI响应失败: " + e.getMessage()));
+                sseEmitter.completeWithError(e);
+            } catch (Exception ex) {
+                // 忽略发送错误
+            }
         }
     }
 
