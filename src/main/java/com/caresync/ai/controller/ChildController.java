@@ -12,7 +12,9 @@ import com.caresync.ai.service.Impl.AiChatRecordServiceImpl;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -72,6 +74,31 @@ public class ChildController {
             return Result.success(childChatMessageVO);
         } catch (Exception e) {
             return Result.error("发送聊天消息失败");
+        }
+    }
+
+    /**
+     * 发送聊天消息（流式接口）
+     * @param chatMessageDTO 聊天消息DTO
+     * @param authorization JWT令牌（Bearer token）
+     * @return SSE流式响应
+     */
+    @PostMapping(value = "/chat/send/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "发送聊天消息（流式）", description = "文字/语音输入，返回流式响应")
+    public SseEmitter sendChatMessageStream(
+            @RequestBody ChatMessageDTO chatMessageDTO,
+            @RequestHeader(value = "Authorization", required = false) String authorization) {
+        try {
+            return liveTalkingService.sendChatMessageStream(chatMessageDTO, authorization);
+        } catch (Exception e) {
+            SseEmitter sseEmitter = new SseEmitter(300000L);
+            try {
+                sseEmitter.send(SseEmitter.event().name("error").data("服务错误: " + e.getMessage()));
+                sseEmitter.completeWithError(e);
+            } catch (Exception ex) {
+                sseEmitter.completeWithError(ex);
+            }
+            return sseEmitter;
         }
     }
 
